@@ -38,7 +38,7 @@ class Backend {
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
         }
 
-        let (responseData, response) = try await URLSession.shared.data(for: request)
+        let (responseData, _) = try await URLSession.shared.data(for: request)
         let clientConnectResponse = try decoder.decode(ClientConnectResponse.self, from: responseData)
         return clientConnectResponse
     }
