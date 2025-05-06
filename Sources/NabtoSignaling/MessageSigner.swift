@@ -1,11 +1,11 @@
 import SwiftJWT
 
-protocol MessageSigner {
+public protocol MessageSigner {
     func signMessage(_ message: String) throws -> String
     func verifyMessage(_ token: String) throws -> String
 }
 
-class SharedSecretMessageSigner: MessageSigner {
+public class SharedSecretMessageSigner: MessageSigner {
     struct SharedSecretClaims: Claims {
         var message: String
         var messageSeq: Int
@@ -15,12 +15,12 @@ class SharedSecretMessageSigner: MessageSigner {
     private let keyId: String
     private let sharedSecret: String
 
-    init(sharedSecret: String, keyId: String) {
+    public init(sharedSecret: String, keyId: String) {
         self.keyId = keyId
         self.sharedSecret = sharedSecret
     }
 
-    func signMessage(_ message: String) throws -> String {
+    public func signMessage(_ message: String) throws -> String {
         let seq = signSeq
         signSeq += 1
 
@@ -34,7 +34,7 @@ class SharedSecretMessageSigner: MessageSigner {
         return signed
     }
     
-    func verifyMessage(_ token: String) throws -> String {
+    public func verifyMessage(_ token: String) throws -> String {
         let jwtVerifier = JWTVerifier.hs256(key: self.sharedSecret.data(using: .utf8)!)
         let jwt = try JWT<SharedSecretClaims>(jwtString: token, verifier: jwtVerifier)
         return jwt.claims.message

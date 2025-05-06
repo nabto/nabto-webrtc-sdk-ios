@@ -2,11 +2,17 @@ import XCTest
 @testable import NabtoSignaling
 
 final class NabtoSignalingTests: XCTestCase {
-    func testExample() throws {
+    func testMessageSigning() throws {
         let message = "Hello World"
         let signer = SharedSecretMessageSigner(sharedSecret: "MySecret", keyId: "default")
         let signed = try signer.signMessage(message)
         let verified = try signer.verifyMessage(signed)
         XCTAssertEqual(message, verified)
+    }
+
+    func testBackend() async throws {
+        let backend = Backend(endpointUrl: "https://eu.webrtc.nabto.net", productId: "wp-apy9i4ab", deviceId: "wd-fxb4zxg7nyf7sf3w")
+        let response = try await backend.doClientConnect(nil)
+        print(response.channelId, response.signalingUrl)
     }
 }
