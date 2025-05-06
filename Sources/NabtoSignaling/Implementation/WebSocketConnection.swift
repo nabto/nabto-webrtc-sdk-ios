@@ -3,6 +3,7 @@ import Foundation
 protocol WebSocketObserver: AnyObject {
     func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: String, authorized: Bool)
     func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String)
+    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String)
     func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String)
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String)
     func socketDidOpen(_ ws: WebSocketConnection)
@@ -13,6 +14,7 @@ struct RoutingMessage: Codable {
         case message = "MESSAGE"
         case error = "ERROR"
         case peerConnected = "PEER_CONNECTED"
+        case peerOffline = "PEER_OFFLINE"
         case ping = "PING"
         case pong = "PONG"
     }
@@ -129,6 +131,8 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
                     observer?.socket(self, didConnectionError: routingMessage.channelId!, errorCode: routingMessage.errorCode!)
                 case .peerConnected:
                     observer?.socket(self, didPeerConnect: routingMessage.channelId!)
+                case .peerOffline:
+                    observer?.socket(self, didPeerDisconnect: routingMessage.channelId!)
                 case .ping:
                     sendPong()
                 case .pong:
@@ -136,7 +140,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
 
             }
         } catch {
-
+            // @TODO
         }
     }
 

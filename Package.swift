@@ -12,11 +12,15 @@ let package = Package(
             name: "NabtoSignaling",
             targets: ["NabtoSignaling"]),
     ],
+    dependencies: [ .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0") ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "NabtoSignaling"),
+            name: "NabtoSignaling",
+            dependencies: [
+                .product(name: "SwiftJWT", package: "Swift-JWT")
+            ]),
         .testTarget(
             name: "NabtoSignalingTests",
             dependencies: ["NabtoSignaling"]),

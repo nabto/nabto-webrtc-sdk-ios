@@ -1,4 +1,4 @@
-enum SignalingConnectionState: String {
+public enum SignalingConnectionState: String {
     case new = "NEW"
     case connecting = "CONNECTING"
     case connected = "CONNECTED"
@@ -7,11 +7,11 @@ enum SignalingConnectionState: String {
     case closed = "CLOSED"
 }
 
-protocol SignalingClientObserver: AnyObject {
+public protocol SignalingClientObserver: AnyObject {
     func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState)
 }
 
-protocol SignalingClient {
+public protocol SignalingClient {
     var signalingChannel: SignalingChannel! { get }
     var connectionState: SignalingConnectionState { get }
 
@@ -21,4 +21,25 @@ protocol SignalingClient {
 
     func addObserver(_ observer: SignalingClientObserver)
     func removeObserver(_ observer: SignalingClientObserver)
+}
+
+public struct SignalingClientOptions {
+    let endpointUrl: String
+    let productId: String
+    let deviceId: String
+
+    public init(
+        endpointUrl: String? = nil,
+        productId: String? = nil,
+        deviceId: String? = nil
+    ) {
+        self.endpointUrl = endpointUrl ?? ""
+        self.productId = productId ?? ""
+        self.deviceId = deviceId ?? ""
+    }
+}
+
+public func createSignalingClient(_ options: SignalingClientOptions? = nil) -> SignalingClient {
+    let opts = options ?? SignalingClientOptions()
+    return SignalingClientImpl(endpointUrl: opts.endpointUrl, productId: opts.productId, deviceId: opts.deviceId)
 }

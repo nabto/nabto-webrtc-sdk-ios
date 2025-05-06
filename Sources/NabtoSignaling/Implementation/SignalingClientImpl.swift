@@ -63,25 +63,35 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
         connectionState = .closed
     }
 
+    func sendRoutingMessage(channelId: String, message: String) {
+        webSocket.sendMessage(channelId, message)
+    }
+
+    func sendError(channelId: String, errorCode: String, errorMessage: String) {
+        webSocket.sendError(channelId, errorCode)
+    }
 
     func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: String, authorized: Bool) {
-        // Signaling channel handle routing message
-        fatalError("NOT IMPLEMENTED")
+        signalingChannel_.handleRoutingMessage(message)
     }
 
     func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String) {
-        // Signaling channel handle peer connected
-        fatalError("NOT IMPLEMENTED")
+        signalingChannel_.handlePeerConnected()
+    }
+
+    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String) {
+        signalingChannel_.handlePeerOffline()
     }
 
     func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String) {
-        // Signaling channel handle peer offline
-        fatalError("NOT IMPLEMENTED")
+        if let code = SignalingErrorCode(rawValue: errorCode) {
+            let err = SignalingError(errorCode: code, errorMessage: "Swift SDK is missing a more detailed error message.") // @TODO
+            signalingChannel_.handleError(err)
+        }
     }
 
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) {
-        // Signaling channel handle error
-        fatalError("NOT IMPLEMENTED")
+        waitReconnect()
     }
 
     func socketDidOpen(_ ws: WebSocketConnection) {
@@ -89,6 +99,10 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
         openedWebSockets += 1
         signalingChannel_.handleWebSocketConnect(wasReconnected: openedWebSockets > 1)
         connectionState = .connected
+    }
+
+    private func waitReconnect() {
+        // @TODO
     }
 
     private func notifyConnectionState() {

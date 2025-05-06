@@ -1,5 +1,4 @@
-
-enum SignalingChannelState : String {
+public enum SignalingChannelState : String {
     case new = "NEW"
     case online = "ONLINE"
     case offline = "OFFLINE"
@@ -7,14 +6,14 @@ enum SignalingChannelState : String {
     case closed = "CLOSED"
 }
 
-protocol SignalingChannelObserver: AnyObject {
+public protocol SignalingChannelObserver: AnyObject {
     func signalingChannel(_ channel: SignalingChannel, didGetMessage message: String)
     func signalingChannel(_ channel: SignalingChannel, didChannelStateChange channelState: SignalingChannelState)
     func signalingChannel(_ channel: SignalingChannel, didSignalingError error: SignalingError)
     func signalingChannelDidSignalingReconnect(_ channel: SignalingChannel)
 }
 
-protocol SignalingChannel {
+public protocol SignalingChannel {
     var channelState: SignalingChannelState { get }
 
     func sendMessage(_ msg: String)

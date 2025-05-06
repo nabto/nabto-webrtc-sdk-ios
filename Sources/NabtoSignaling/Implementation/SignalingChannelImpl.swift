@@ -1,37 +1,101 @@
-class SignalingChannelImpl: SignalingChannel {
+class SignalingChannelImpl: SignalingChannel, ReliabilityHandler {
     struct Observation {
         weak var observer: SignalingChannelObserver?
     }
 
     private var observations = [ObjectIdentifier: Observation]()
-    public var channelId: String = ""
+    private var receivedMessages: [String?] = []
+    private var reliabilityLayer: Reliability! = nil
+    private var closed = false
+    private var handlingReceivedMessages = false
+    private weak var signalingClient: SignalingClientImpl?
 
-    var channelState: SignalingChannelState = .new {
-        didSet { notifyChannelState() }
-    }
+    var channelId: String
+    var channelState: SignalingChannelState = .new { didSet { notifyChannelState() } }
 
     init(signalingClient: SignalingClientImpl, channelId: String) {
+        self.signalingClient = signalingClient
+        self.channelId = channelId
+        self.reliabilityLayer = Reliability(handler: self)
+    }
 
+    func sendRoutingMessage(_ msg: ReliabilityMessage) {
+        signalingClient?.sendRoutingMessage(channelId: channelId, message: ReliabilityMessage.toJson(msg))
     }
 
     func sendMessage(_ msg: String) {
-        
+        reliabilityLayer.sendReliableMessage(msg)
     }
 
     func sendError(errorCode: String, errorMessage: String) {
-        
+        signalingClient?.sendError(channelId: channelId, errorCode: errorCode, errorMessage: errorMessage)
     }
 
     func checkAlive() {
-        
-    }
-
-    func handleWebSocketConnect(wasReconnected: Bool) {
         // @TODO
     }
 
+    func handleWebSocketConnect(wasReconnected: Bool) {
+        if channelState == .closed || channelState == .failed {
+            return
+        }
+        reliabilityLayer.handleConnect()
+        if wasReconnected {
+            notifySignalingReconnect()
+        }
+    }
+
     func close() {
-        
+        if !closed {
+            closed = true
+            signalingClient?.sendError(
+                channelId: channelId,
+                errorCode: "CHANNEL_CLOSED",
+                errorMessage: "Signaling client channel was closed"
+            )
+            signalingClient?.close()
+        }
+    }
+
+    func handleRoutingMessage(_ message: String) {
+        do {
+            let parsed = try ReliabilityMessage.fromJson(message)
+            let reliableMessage = reliabilityLayer.handleRoutingMessage(parsed)
+            receivedMessages.append(reliableMessage)
+            handleReceivedMessages()
+        } catch {
+            // @TODO: Logging
+        }
+    }
+
+    func handleReceivedMessages() {
+        if !handlingReceivedMessages {
+            if !receivedMessages.isEmpty {
+                handlingReceivedMessages = true
+                let msg = receivedMessages.removeFirst()
+                if let msg = msg {
+                    notifyMessage(msg)
+                }
+                handlingReceivedMessages = false
+                handleReceivedMessages()
+            }
+        }
+    }
+
+    func handlePeerConnected() {
+        channelState = .online
+        reliabilityLayer.handlePeerConnected()
+    }
+
+    func handlePeerOffline() {
+        channelState = .offline
+    }
+
+    func handleError(_ error: SignalingError) {
+        if channelState == .closed || channelState == .failed {
+            return
+        }
+        notifySignalingError(error)
     }
 
     private func notifyMessage(_ message: String) {
