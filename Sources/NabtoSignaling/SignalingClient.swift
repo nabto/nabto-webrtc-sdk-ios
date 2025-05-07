@@ -44,5 +44,5 @@ public struct SignalingClientOptions {
 
 public func createSignalingClient(_ options: SignalingClientOptions? = nil) -> SignalingClient {
     let opts = options ?? SignalingClientOptions()
-    return SignalingClientImpl(endpointUrl: opts.endpointUrl, productId: opts.productId, deviceId: opts.deviceId)
+    return SignalingClientImpl(endpointUrl: opts.endpointUrl, productId: opts.productId, deviceId: opts.deviceId, requireOnline: opts.requireOnline)
 }

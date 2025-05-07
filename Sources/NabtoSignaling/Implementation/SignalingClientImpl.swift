@@ -12,6 +12,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
     private var endpointUrl: String
     private var productId: String
     private var deviceId: String
+    private var requireOnline: Bool
     
     private var reconnectCounter = 0
     private var openedWebSockets = 0
@@ -22,10 +23,11 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
     var signalingChannel_: SignalingChannelImpl! = nil
     var signalingChannel: SignalingChannel! { get { self.signalingChannel_ } }
 
-    init(endpointUrl: String, productId: String, deviceId: String) {
+    init(endpointUrl: String, productId: String, deviceId: String, requireOnline: Bool) {
         self.endpointUrl = endpointUrl
         self.productId = productId
         self.deviceId = deviceId
+        self.requireOnline = requireOnline
 
         self.backend = Backend(endpointUrl: endpointUrl, productId: productId, deviceId: deviceId)
         self.signalingChannel_ = SignalingChannelImpl(signalingClient: self, channelId: "not_connected")
@@ -48,8 +50,12 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
         let response = try await backend.doClientConnect(accessToken)
         
         signalingChannel_.channelId = response.channelId
-        if response.deviceOnline ?? false {
-            signalingChannel_.channelState = .online
+        if let deviceOnline = response.deviceOnline {
+            signalingChannel_.channelState = deviceOnline ? .online : .offline
+        }
+
+        if self.requireOnline && signalingChannel_.channelState != .online {
+            throw SignalingClientError.connectError("The requested device is not online, try again later.")
         }
 
         webSocket.connect(response.signalingUrl, observer: self)
