@@ -27,15 +27,18 @@ public struct SignalingClientOptions {
     let endpointUrl: String
     let productId: String
     let deviceId: String
+    let requireOnline: Bool
 
     public init(
         endpointUrl: String? = nil,
         productId: String? = nil,
-        deviceId: String? = nil
+        deviceId: String? = nil,
+        requireOnline: Bool? = nil
     ) {
-        self.endpointUrl = endpointUrl ?? ""
         self.productId = productId ?? ""
         self.deviceId = deviceId ?? ""
+        self.endpointUrl = endpointUrl ?? "https://\(self.productId).webrtc.nabto.net"
+        self.requireOnline = requireOnline ?? false
     }
 }
 
