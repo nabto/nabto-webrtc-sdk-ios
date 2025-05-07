@@ -35,6 +35,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         isConnected = true
+        self.observer?.socketDidOpen(self)
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
