@@ -52,7 +52,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
             signalingChannel_.channelState = .online
         }
 
-        webSocket.connect(self.endpointUrl, observer: self)
+        webSocket.connect(response.signalingUrl, observer: self)
     }
 
     func close() {
