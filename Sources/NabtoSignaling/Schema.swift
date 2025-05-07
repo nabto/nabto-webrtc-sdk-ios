@@ -80,8 +80,8 @@ public struct SignalingDescription: Codable {
 }
 
 public struct SignalingMessageUnion {
-    public var candidate: SignalingCandidate?
-    public var createRequest: SignalingCreateRequest?
-    public var createResponse: SignalingCreateResponse?
-    public var description: SignalingDescription?
+    public var candidate: SignalingCandidate? = nil
+    public var createRequest: SignalingCreateRequest? = nil
+    public var createResponse: SignalingCreateResponse? = nil
+    public var description: SignalingDescription? = nil
 }

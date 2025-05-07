@@ -15,12 +15,11 @@ let deviceId = "wd-fxb4zxg7nyf7sf3w"
 let sharedSecret = "MySecret"
 
 class ViewController: UIViewController {
-    @IBOutlet weak var videoScreenView: UIView!
-
     // WebRTC
     var videoView: RTCMTLVideoView!
     var factory: RTCPeerConnectionFactory! = nil
     var peerConnection: RTCPeerConnection! = nil
+    var remoteTrack: RTCVideoTrack! = nil
     var polite = false
     var makingOffer = false
     var ignoreOffer = false
@@ -31,8 +30,8 @@ class ViewController: UIViewController {
     let signer = SharedSecretMessageSigner(sharedSecret: sharedSecret, keyId: "default")
 
     func initPeerConnectionFactory() {
-        RTCSetMinDebugLogLevel(.info)
-        RTCEnableMetrics()
+        //RTCSetMinDebugLogLevel(.info)
+        //RTCEnableMetrics()
         RTCInitializeSSL()
 
         let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
@@ -43,9 +42,9 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        videoView = RTCMTLVideoView(frame: videoScreenView.frame)
+        videoView = RTCMTLVideoView(frame: self.view.frame)
         videoView.videoContentMode = .scaleAspectFit
-        addVideoView(into: videoScreenView)
+        embedView(videoView, into: self.view)
 
         initPeerConnectionFactory()
 
@@ -65,21 +64,22 @@ class ViewController: UIViewController {
         }
     }
 
-    private func addVideoView(into container: UIView) {
-        container.addSubview(videoView)
-        videoView.translatesAutoresizingMaskIntoConstraints = false
+    private func embedView(_ view: UIView, into container: UIView) {
+        container.addSubview(view)
+        view.translatesAutoresizingMaskIntoConstraints = false
+
         container.addConstraints(NSLayoutConstraint.constraints(
             withVisualFormat: "H:|[view]|",
             options: [],
             metrics: nil,
-            views: ["view": self]
+            views: ["view": view]
         ))
 
         container.addConstraints(NSLayoutConstraint.constraints(
             withVisualFormat: "V:|[view]|",
             options: [],
             metrics: nil,
-            views: ["view": self]
+            views: ["view": view]
         ))
 
         container.layoutIfNeeded()
@@ -263,7 +263,9 @@ extension ViewController: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didAdd rtpReceiver: RTCRtpReceiver, streams mediaStreams: [RTCMediaStream]) {
         if let track = rtpReceiver.track {
             switch (track) {
-                case is RTCVideoTrack:
+                case let track as RTCVideoTrack:
+                    track.add(videoView)
+                    remoteTrack = track
                     break
                 case is RTCAudioTrack:
                     break
