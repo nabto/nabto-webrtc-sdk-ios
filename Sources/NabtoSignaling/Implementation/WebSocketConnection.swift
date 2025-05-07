@@ -91,8 +91,15 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         send(routingMessage)
     }
 
-    func checkAlive(timeout: Int) {
-        // @TODO
+    func checkAlive(timeout: Double) {
+        let currentPongCounter = self.pongCounter
+        let timeoutSeconds = timeout / 1000
+        sendPing()
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeoutSeconds) {
+            if currentPongCounter == self.pongCounter {
+                self.observer?.socket(self, didCloseOrError: "timeout")
+            }
+        }
     }
 
     private func receiveMessage() async {

@@ -32,7 +32,10 @@ class SignalingChannelImpl: SignalingChannel, ReliabilityHandler {
     }
 
     func checkAlive() {
-        // @TODO
+        if channelState == .closed || channelState == .failed {
+            return
+        }
+        signalingClient?.checkAlive()
     }
 
     func handleWebSocketConnect(wasReconnected: Bool) {

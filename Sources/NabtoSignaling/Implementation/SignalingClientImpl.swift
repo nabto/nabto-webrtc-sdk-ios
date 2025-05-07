@@ -1,3 +1,5 @@
+let CHECK_ALIVE_TIMEOUT = 1000.0
+
 enum SignalingClientError: Error {
     case connectError(String)
 }
@@ -94,6 +96,10 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver {
             let err = SignalingError(errorCode: code, errorMessage: "Swift SDK is missing a more detailed error message.") // @TODO
             signalingChannel_.handleError(err)
         }
+    }
+
+    func checkAlive() {
+        self.webSocket.checkAlive(timeout: CHECK_ALIVE_TIMEOUT)
     }
 
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) {
