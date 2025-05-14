@@ -1,5 +1,8 @@
 import Foundation
 
+/**
+ * Error codes that can be contained in a SignalingError
+ */
 public enum SignalingErrorCode: String {
     case decodeError = "DECODE_ERROR"
     case verificationError = "VERIFICATION_ERROR"
@@ -8,6 +11,9 @@ public enum SignalingErrorCode: String {
     case noMoreChannels = "NO_MORE_CHANNELS"
 }
 
+/**
+ * LocalizedError representing an error occurring on a Signaling channel
+ */
 public struct SignalingError: LocalizedError {
     private(set) var errorCode: SignalingErrorCode
     private(set) var errorMessage: String
