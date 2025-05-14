@@ -7,10 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7808E31C2DC843EA0082C0EC /* NabtoSignaling in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E31B2DC843EA0082C0EC /* NabtoSignaling */; };
-		7808E31F2DC8442B0082C0EC /* NabtoSignaling in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E31E2DC8442B0082C0EC /* NabtoSignaling */; };
 		7808E3322DC845190082C0EC /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E3312DC845190082C0EC /* WebRTC */; };
-		7808E3352DC84B530082C0EC /* NabtoSignaling in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E3342DC84B530082C0EC /* NabtoSignaling */; };
+		78C99AB22DD4B2A200DC0B75 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */; };
+		78C99AB42DD4B2A200DC0B75 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,10 +42,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7808E31F2DC8442B0082C0EC /* NabtoSignaling in Frameworks */,
+				78C99AB42DD4B2A200DC0B75 /* NabtoWebRTCUtil in Frameworks */,
+				78C99AB22DD4B2A200DC0B75 /* NabtoWebRTC in Frameworks */,
 				7808E3322DC845190082C0EC /* WebRTC in Frameworks */,
-				7808E3352DC84B530082C0EC /* NabtoSignaling in Frameworks */,
-				7808E31C2DC843EA0082C0EC /* NabtoSignaling in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				7808E3042DC843B80082C0EC /* Demo */,
+				78C99AA72DD4B15100DC0B75 /* Frameworks */,
 				7808E3032DC843B80082C0EC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +66,13 @@
 				7808E3022DC843B80082C0EC /* Demo.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		78C99AA72DD4B15100DC0B75 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -89,10 +95,9 @@
 			);
 			name = Demo;
 			packageProductDependencies = (
-				7808E31B2DC843EA0082C0EC /* NabtoSignaling */,
-				7808E31E2DC8442B0082C0EC /* NabtoSignaling */,
 				7808E3312DC845190082C0EC /* WebRTC */,
-				7808E3342DC84B530082C0EC /* NabtoSignaling */,
+				78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */,
+				78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */,
 			);
 			productName = Demo;
 			productReference = 7808E3022DC843B80082C0EC /* Demo.app */;
@@ -124,7 +129,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */,
-				7808E3332DC84B530082C0EC /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */,
+				78C99AB02DD4B2A200DC0B75 /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7808E3032DC843B80082C0EC /* Products */;
@@ -356,7 +361,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		7808E3332DC84B530082C0EC /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */ = {
+		78C99AB02DD4B2A200DC0B75 /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../../nabto-signaling-swift-sdk";
 		};
@@ -374,22 +379,18 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7808E31B2DC843EA0082C0EC /* NabtoSignaling */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NabtoSignaling;
-		};
-		7808E31E2DC8442B0082C0EC /* NabtoSignaling */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NabtoSignaling;
-		};
 		7808E3312DC845190082C0EC /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
 		};
-		7808E3342DC84B530082C0EC /* NabtoSignaling */ = {
+		78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = NabtoSignaling;
+			productName = NabtoWebRTC;
+		};
+		78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NabtoWebRTCUtil;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

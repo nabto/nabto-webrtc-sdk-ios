@@ -7,7 +7,8 @@
 
 import UIKit
 import WebRTC
-import NabtoSignaling
+import NabtoWebRTC
+import NabtoWebRTCUtil
 
 let productId = "wp-apy9i4ab"
 let deviceId = "wd-fxb4zxg7nyf7sf3w"
@@ -25,7 +26,6 @@ class ViewController: UIViewController {
 
     // Nabto Signaling
     var signalingClient: SignalingClient? = nil
-    let decoder = MessageDecoder()
     let signer = SharedSecretMessageSigner(sharedSecret: sharedSecret, keyId: "default")
 
     func initPeerConnectionFactory() {
@@ -169,10 +169,10 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: SignalingChannelObserver {
-    func signalingChannel(_ channel: any NabtoSignaling.SignalingChannel, didGetMessage message: String) {
+    func signalingChannel(_ channel: any SignalingChannel, didGetMessage message: String) {
         do {
             let verified = try signer.verifyMessage(message)
-            let msg = decoder.decodeMessage(verified)
+            let msg = SignalingMessageUnion.fromJson(verified)
             
             if let desc = msg.description {
                 setRemoteDescription(desc.description)
@@ -204,15 +204,15 @@ extension ViewController: SignalingChannelObserver {
         }
     }
 
-    func signalingChannel(_ channel: any NabtoSignaling.SignalingChannel, didChannelStateChange channelState: NabtoSignaling.SignalingChannelState) {
+    func signalingChannel(_ channel: any SignalingChannel, didChannelStateChange channelState: SignalingChannelState) {
         print("Signaling channel state changed to \(channelState)")
     }
 
-    func signalingChannel(_ channel: any NabtoSignaling.SignalingChannel, didSignalingError error: NabtoSignaling.SignalingError) {
+    func signalingChannel(_ channel: any SignalingChannel, didSignalingError error: SignalingError) {
         print("Signaling chanel error: \(error)")
     }
 
-    func signalingChannelDidSignalingReconnect(_ channel: any NabtoSignaling.SignalingChannel) {
+    func signalingChannelDidSignalingReconnect(_ channel: any SignalingChannel) {
         print("Signaling reconnect requested")
     }
 }
