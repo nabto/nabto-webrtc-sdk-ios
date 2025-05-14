@@ -9,7 +9,6 @@ import UIKit
 import WebRTC
 import NabtoSignaling
 
-let endpointUrl = "https://eu.webrtc.nabto.net"
 let productId = "wp-apy9i4ab"
 let deviceId = "wd-fxb4zxg7nyf7sf3w"
 let sharedSecret = "MySecret"
@@ -49,7 +48,6 @@ class ViewController: UIViewController {
         initPeerConnectionFactory()
 
         signalingClient = createSignalingClient(SignalingClientOptions(
-            endpointUrl: endpointUrl,
             productId: productId,
             deviceId: deviceId
         ))

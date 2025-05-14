@@ -1,5 +1,6 @@
 import XCTest
-@testable import NabtoSignaling
+@testable import NabtoWebRTC
+@testable import NabtoWebRTCUtil
 
 final class NabtoSignalingTests: XCTestCase {
     func testMessageSigning() throws {
