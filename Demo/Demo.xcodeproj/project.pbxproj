@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		7808E3322DC845190082C0EC /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E3312DC845190082C0EC /* WebRTC */; };
-		78C99AB22DD4B2A200DC0B75 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */; };
-		78C99AB42DD4B2A200DC0B75 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */; };
+		D4ED23E62DD749EF00087BD8 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */; };
+		D4ED23E82DD749EF00087BD8 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = D4ED23E72DD749EF00087BD8 /* NabtoWebRTCUtil */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,8 +42,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				78C99AB42DD4B2A200DC0B75 /* NabtoWebRTCUtil in Frameworks */,
-				78C99AB22DD4B2A200DC0B75 /* NabtoWebRTC in Frameworks */,
+				D4ED23E82DD749EF00087BD8 /* NabtoWebRTCUtil in Frameworks */,
+				D4ED23E62DD749EF00087BD8 /* NabtoWebRTC in Frameworks */,
 				7808E3322DC845190082C0EC /* WebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,8 +96,8 @@
 			name = Demo;
 			packageProductDependencies = (
 				7808E3312DC845190082C0EC /* WebRTC */,
-				78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */,
-				78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */,
+				D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */,
+				D4ED23E72DD749EF00087BD8 /* NabtoWebRTCUtil */,
 			);
 			productName = Demo;
 			productReference = 7808E3022DC843B80082C0EC /* Demo.app */;
@@ -129,7 +129,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */,
-				78C99AB02DD4B2A200DC0B75 /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */,
+				D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference "../../nabto-webrtc-sdk-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7808E3032DC843B80082C0EC /* Products */;
@@ -361,9 +361,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		78C99AB02DD4B2A200DC0B75 /* XCLocalSwiftPackageReference "../../nabto-signaling-swift-sdk" */ = {
+		D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference "../../nabto-webrtc-sdk-ios" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../nabto-signaling-swift-sdk";
+			relativePath = "../../nabto-webrtc-sdk-ios";
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -384,11 +384,11 @@
 			package = 7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
 		};
-		78C99AB12DD4B2A200DC0B75 /* NabtoWebRTC */ = {
+		D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NabtoWebRTC;
 		};
-		78C99AB32DD4B2A200DC0B75 /* NabtoWebRTCUtil */ = {
+		D4ED23E72DD749EF00087BD8 /* NabtoWebRTCUtil */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NabtoWebRTCUtil;
 		};
