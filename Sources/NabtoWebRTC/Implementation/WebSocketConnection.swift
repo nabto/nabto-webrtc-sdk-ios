@@ -1,7 +1,7 @@
 import Foundation
 
 protocol WebSocketObserver: AnyObject {
-    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: String, authorized: Bool)
+    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityMessage, authorized: Bool)
     func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String)
     func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String)
     func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String)
@@ -21,7 +21,7 @@ struct RoutingMessage: Codable {
 
     var type: RoutingMessageType
     var channelId: String?
-    var message: String?
+    var message: ReliabilityMessage?
     var authorized: Bool?
     var errorCode: String?
     var errorMessage: String?
@@ -62,7 +62,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         socket?.cancel(with: .goingAway, reason: nil)
     }
 
-    func sendMessage(_ channelId: String, _ message: String) {
+    func sendMessage(_ channelId: String, _ message: ReliabilityMessage) {
         let routingMessage = RoutingMessage(
             type: .message,
             channelId: channelId,

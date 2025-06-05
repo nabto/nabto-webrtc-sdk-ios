@@ -8,15 +8,7 @@ struct ReliabilityMessage: Codable {
 
     let type: MessageType
     let seq: Int
-    let message: String?
-
-    static func fromJson(_ json: String) throws -> ReliabilityMessage {
-        return try JSONDecoder().decode(ReliabilityMessage.self, from: json.data(using: .utf8)!)
-    }
-
-    static func toJson(_ msg: ReliabilityMessage) -> String {
-        return String(data: try! JSONEncoder().encode(msg), encoding: .utf8)!
-    }
+    let message: JSONValue?
 }
 
 protocol ReliabilityHandler: AnyObject {
@@ -33,7 +25,7 @@ class Reliability {
         self.handler = handler
     }
 
-    func sendReliableMessage(_ message: String) {
+    func sendReliableMessage(_ message: JSONValue) {
         let encoded = ReliabilityMessage(
             type: .message,
             seq: sendSeq,
@@ -52,7 +44,7 @@ class Reliability {
         sendUnackedMessages()
     }
 
-    func handleRoutingMessage(_ message: ReliabilityMessage) -> String? {
+    func handleRoutingMessage(_ message: ReliabilityMessage) -> JSONValue? {
         if message.type == .ack {
             handleAck(message)
             return nil
@@ -61,7 +53,7 @@ class Reliability {
         }
     }
 
-    private func handleReliabilityMessage(_ message: ReliabilityMessage) -> String? {
+    private func handleReliabilityMessage(_ message: ReliabilityMessage) -> JSONValue? {
         if message.seq <= recvSeq {
             // Message was expected or retransmitted
             sendAck(message.seq)

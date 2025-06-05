@@ -26,7 +26,7 @@ class ViewController: UIViewController {
 
     // Nabto Signaling
     var signalingClient: SignalingClient? = nil
-    let signer = SharedSecretMessageSigner(sharedSecret: sharedSecret, keyId: "default")
+    let signer = JWTMessageSigner(sharedSecret: sharedSecret, keyId: "default")
 
     func initPeerConnectionFactory() {
         //RTCSetMinDebugLogLevel(.info)
@@ -90,12 +90,11 @@ class ViewController: UIViewController {
         }
 
         let jsonEncoder = JSONEncoder()
-        let createRequestMessage = SignalingCreateRequest()
-        let msg = String(data: try! jsonEncoder.encode(createRequestMessage), encoding: .utf8)!
-        let signed = try! signer.signMessage(msg)
+        let setupRequestMessage = SignalingSetupRequest()
+        let signed = try! signer.signMessage(setupRequestMessage.toJson())
 
-        signalingClient.signalingChannel.addObserver(self)
-        signalingClient.signalingChannel.sendMessage(signed)
+        signalingClient.addObserver(self)
+        signalingClient.sendMessage(signed)
     }
 
     private func setupPeerConnection(_ iceServers: [RTCIceServer]) {
@@ -141,10 +140,8 @@ class ViewController: UIViewController {
         do {
             if let desc = desc {
                 let signalingDescription = SignalingDescription(type: RTCSessionDescription.string(for: desc.type), sdp: desc.sdp)
-                let jsonData = try JSONEncoder().encode(signalingDescription)
-                let json = String(data: jsonData, encoding: .utf8)!
-                let signed = try signer.signMessage(json)
-                signalingClient?.signalingChannel.sendMessage(signed)
+                let signed = try signer.signMessage(signalingDescription.toJson())
+                signalingClient?.sendMessage(signed)
             }
         } catch {
             print("sendDescription error: \(error)")
@@ -158,18 +155,19 @@ class ViewController: UIViewController {
                 sdpMid: iceCandidate.sdpMid,
                 sdpMLineIndex: Int(iceCandidate.sdpMLineIndex)
             )
-            let jsonData = try JSONEncoder().encode(signalingCandidate)
-            let json = String(data: jsonData, encoding: .utf8)!
-            let signed = try signer.signMessage(json)
-            signalingClient?.signalingChannel.sendMessage(signed)
+            let signed = try signer.signMessage(signalingCandidate.toJson())
+            signalingClient?.sendMessage(signed)
         } catch {
             print("sendIceCandidate error: \(error)")
         }
     }
 }
 
-extension ViewController: SignalingChannelObserver {
-    func signalingChannel(_ channel: any SignalingChannel, didGetMessage message: String) {
+extension ViewController: SignalingClientObserver {
+    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didConnectionStateChange connectionState: NabtoWebRTC.SignalingConnectionState) {
+    }
+    
+    func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) {
         do {
             let verified = try signer.verifyMessage(message)
             let msg = SignalingMessageUnion.fromJson(verified)
@@ -182,11 +180,11 @@ extension ViewController: SignalingChannelObserver {
                 addIceCandidate(cand.candidate)
             }
 
-            if msg.createRequest != nil {
+            if msg.setupRequest != nil {
                 fatalError("Received createRequest but I'm a client?")
             }
 
-            if let response = msg.createResponse {
+            if let response = msg.setupResponse {
                 var iceServers: [RTCIceServer] = []
                 for iceServer in response.iceServers {
                     let rtcIceServer = RTCIceServer(
@@ -204,15 +202,15 @@ extension ViewController: SignalingChannelObserver {
         }
     }
 
-    func signalingChannel(_ channel: any SignalingChannel, didChannelStateChange channelState: SignalingChannelState) {
+    func signalingClient(_ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState) {
         print("Signaling channel state changed to \(channelState)")
     }
 
-    func signalingChannel(_ channel: any SignalingChannel, didSignalingError error: SignalingError) {
+    func signalingClient(_ client: any SignalingClient, didSignalingError error: SignalingError) {
         print("Signaling chanel error: \(error)")
     }
 
-    func signalingChannelDidSignalingReconnect(_ channel: any SignalingChannel) {
+    func signalingClientDidSignalingReconnect(_ client: any SignalingClient) {
         print("Signaling reconnect requested")
     }
 }
