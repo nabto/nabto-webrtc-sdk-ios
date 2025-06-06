@@ -81,7 +81,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         channelState = .offline
     }
 
-    func sendRoutingMessage(_ msg: ReliabilityMessage) {
+    func sendRoutingMessage(_ msg: ReliabilityData) {
         webSocket.sendMessage(self.connectionId, msg)
     }
 
@@ -94,7 +94,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         webSocket.sendError(self.connectionId, errorCode)
     }
 
-    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityMessage, authorized: Bool) {
+    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool) {
         handleRoutingMessage(message)
     }
 
@@ -106,9 +106,9 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         handlePeerOffline()
     }
 
-    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String) {
+    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String) {
         if let code = SignalingErrorCode(rawValue: errorCode) {
-            let err = SignalingError(errorCode: code, errorMessage: "Swift SDK is missing a more detailed error message.") // @TODO
+            let err = SignalingError(errorCode: code, errorMessage: errorMessage)
             handleError(err)
         }
     }
@@ -147,7 +147,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         channelState = .offline
     }
 
-    func handleRoutingMessage(_ message: ReliabilityMessage) {
+    func handleRoutingMessage(_ message: ReliabilityData) {
         let reliableMessage = reliabilityLayer.handleRoutingMessage(message)
         receivedMessages.append(reliableMessage)
         handleReceivedMessages()

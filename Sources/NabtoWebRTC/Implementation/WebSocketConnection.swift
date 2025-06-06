@@ -1,12 +1,17 @@
 import Foundation
 
 protocol WebSocketObserver: AnyObject {
-    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityMessage, authorized: Bool)
+    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool)
     func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String)
     func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String)
-    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String)
+    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String)
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String)
     func socketDidOpen(_ ws: WebSocketConnection)
+}
+
+struct RoutingMessageError: Codable {
+    var code: String
+    var message: String?
 }
 
 struct RoutingMessage: Codable {
@@ -21,10 +26,9 @@ struct RoutingMessage: Codable {
 
     var type: RoutingMessageType
     var channelId: String?
-    var message: ReliabilityMessage?
+    var message: ReliabilityData?
     var authorized: Bool?
-    var errorCode: String?
-    var errorMessage: String?
+    var error: RoutingMessageError?
 }
 
 class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDelegate {
@@ -62,7 +66,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         socket?.cancel(with: .goingAway, reason: nil)
     }
 
-    func sendMessage(_ channelId: String, _ message: ReliabilityMessage) {
+    func sendMessage(_ channelId: String, _ message: ReliabilityData) {
         let routingMessage = RoutingMessage(
             type: .message,
             channelId: channelId,
@@ -75,8 +79,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         let routingMessage = RoutingMessage(
             type: .message,
             channelId: channelId,
-            errorCode: errorCode,
-            errorMessage: errorMessage
+            error: RoutingMessageError(code: errorCode, message: errorMessage)
         )
         send(routingMessage)
     }
@@ -136,7 +139,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
                 case .message:
                     observer?.socket(self, didGetMessage: routingMessage.channelId!, message: routingMessage.message!, authorized: routingMessage.authorized ?? false)
                 case .error:
-                    observer?.socket(self, didConnectionError: routingMessage.channelId!, errorCode: routingMessage.errorCode!)
+                    observer?.socket(self, didConnectionError: routingMessage.channelId!, errorCode: routingMessage.error!.code, errorMessage: routingMessage.error!.message ?? "Missing detailed error information")
                 case .peerConnected:
                     observer?.socket(self, didPeerConnect: routingMessage.channelId!)
                 case .peerOffline:
