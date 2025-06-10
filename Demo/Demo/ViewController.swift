@@ -227,9 +227,8 @@ extension ViewController: SignalingClientObserver {
         print("Signaling channel state changed to \(channelState)")
     }
 
-    func signalingClient(_ client: any SignalingClient, didSignalingError error: SignalingError) {
-        let x = error.errorDescription?.replacingOccurrences(of: "\\n", with: "\n")
-        print("Signaling channel error: \(x!)")
+    func signalingClient(_ client: any SignalingClient, didError error: Error) {
+        print("Signaling channel error: \(error)")
     }
 
     func signalingClientDidSignalingReconnect(_ client: any SignalingClient) {
