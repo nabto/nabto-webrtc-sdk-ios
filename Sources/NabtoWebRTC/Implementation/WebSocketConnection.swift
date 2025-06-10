@@ -120,11 +120,11 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
                                 handleIncomingMessage(string)
                             }
                         @unknown default:
-                            print("Unknown message received!")
+                            Log.webSocket.debug("Unknown message received!")
                     }
                 }
             } catch {
-                // @TODO: print error?
+                Log.webSocket.error("Failed to handle incoming websocket message: \(error)")
                 isActive = false
             }
         }
@@ -151,7 +151,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
 
             }
         } catch {
-            // @TODO
+            Log.webSocket.error("Failed to handle incoming websocket message: \(error)")
         }
     }
 
@@ -167,13 +167,11 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
             let webSocketMessage = URLSessionWebSocketTask.Message.string(json)
             socket?.send(webSocketMessage) { error in
                  if let error = error {
-                    // @TODO: Error handling
-                    print("Failed to send websocket message: \(error)")
+                    Log.webSocket.error("Failed to send websocket message: \(error)")
                  }
             }
         } catch {
-            // @TODO: error handling
-            print("Failed to send websocket message: \(error)")
+            Log.webSocket.error("Failed to send websocket message: \(error)")
         }
     }
 }

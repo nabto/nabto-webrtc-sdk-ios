@@ -61,7 +61,7 @@ class Reliability {
 
         if message.seq != recvSeq {
             // Message is out of order
-            // @TODO: Logging
+            Log.reliability.info("Received a message with seq \(message.seq), the expected recvSeq is \(self.recvSeq). This is expected on initial connect or on reconnect.")
             return nil
         }
 
@@ -74,10 +74,10 @@ class Reliability {
             if first.seq == ack.seq {
                 unackedMessages.remove(at: 0)
             } else {
-                // @TODO logging
+                Log.reliability.info("Received an ACK for sequence number \(ack.seq) but first unacked data item has sequence number \(first.seq)")
             }
         } else {
-            // @TODO: Log that ACK was received but unacked messages is empty
+            Log.reliability.info("Received ACK but there is no unacked data.")
         }
     }
 
