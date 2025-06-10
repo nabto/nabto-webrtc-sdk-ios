@@ -52,9 +52,9 @@ public protocol SignalingClientObserver: AnyObject {
     /**
      * SignalingClient got an error
      * @param client The SignalingClient that the error occurred on
-     * @param error The SignalingError that occurred
+     * @param error The error that occurred
      */
-    func signalingClient(_ client: SignalingClient, didSignalingError error: SignalingError)
+    func signalingClient(_ client: SignalingClient, didError error: Error)
 
     /**
      * SignalingClient reconnected

@@ -1,8 +1,6 @@
-let CHECK_ALIVE_TIMEOUT = 1000.0
+import Dispatch
 
-enum SignalingClientError: Error {
-    case connectError(String)
-}
+let CHECK_ALIVE_TIMEOUT = 1000.0
 
 class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandler {
     struct Observation {
@@ -17,6 +15,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
     private var endpointUrl: String
     private var productId: String
     private var deviceId: String
+    private var signalingUrl: String?
     private var requireOnline: Bool
     private var backend: Backend
 
@@ -27,6 +26,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
     private var handlingReceivedMessages = false
     private var receivedMessages: [JSONValue?] = []
 
+    private var isReconnecting = false
     private var reconnectCounter = 0
     private var openedWebSockets = 0
 
@@ -65,6 +65,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
             throw SignalingClientError.connectError("The requested device is not online, try again later.")
         }
 
+        self.signalingUrl = response.signalingUrl
         webSocket.connect(response.signalingUrl, observer: self)
     }
 
@@ -118,7 +119,15 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
     }
 
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) {
-        waitReconnect()
+        if connectionState == .failed || connectionState == .closed {
+            return
+        }
+
+        if openedWebSockets == 0 {
+            handleError(SignalingClientError.runtimeError("The websocket was closed before it opened."))
+        } else {
+            waitReconnect()
+        }
     }
 
     func socketDidOpen(_ ws: WebSocketConnection) {
@@ -167,15 +176,48 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         }
     }
 
-    func handleError(_ error: SignalingError) {
+    func handleError(_ error: Error) {
         if channelState == .closed || channelState == .failed {
             return
         }
-        notifySignalingError(error)
+        notifyError(error)
+    }
+
+    private func reconnect() {
+        if connectionState == .failed || connectionState == .closed {
+            return
+        }
+
+        isReconnecting = true
+        connectionState = .connecting
+
+        if let url = self.signalingUrl {
+            webSocket.connect(url, observer: self)
+        }
     }
 
     private func waitReconnect() {
-        // @TODO
+        if connectionState == .failed || connectionState == .closed {
+            return
+        }
+
+        if connectionState == .waitRetry {
+            return
+        }
+
+        if reconnectCounter > 7 {
+            isReconnecting = false
+            connectionState = .failed
+            return
+        }
+
+        connectionState = .waitRetry
+        let reconnectWait =  (1 << reconnectCounter)
+        reconnectCounter += 1
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectWait)) {
+            self.reconnect()
+        }
     }
 
     private func notifyConnectionState() {
@@ -211,14 +253,14 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         }
     }
 
-    private func notifySignalingError(_ error: SignalingError) {
+    private func notifyError(_ error: Error) {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClient(self, didSignalingError: error)
+            observer.signalingClient(self, didError: error)
         }
     }
 
