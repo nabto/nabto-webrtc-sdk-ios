@@ -17,6 +17,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
     private var deviceId: String
     private var signalingUrl: String?
     private var requireOnline: Bool
+    private var accessToken: String?
     private var backend: Backend
 
     private var reliabilityLayer: Reliability! = nil
@@ -30,22 +31,19 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
     private var reconnectCounter = 0
     private var openedWebSockets = 0
 
-    init(endpointUrl: String, productId: String, deviceId: String, requireOnline: Bool) {
+    init(endpointUrl: String, productId: String, deviceId: String, requireOnline: Bool, accessToken: String?) {
         self.endpointUrl = endpointUrl
         self.productId = productId
         self.deviceId = deviceId
         self.requireOnline = requireOnline
+        self.accessToken = accessToken
 
         self.backend = Backend(endpointUrl: endpointUrl, productId: productId, deviceId: deviceId)
         self.reliabilityLayer = Reliability(handler: self)
     }
 
     func connect() async throws {
-        try await doConnect(accessToken: nil)
-    }
-
-    func connect(accessToken: String) async throws {
-        try await doConnect(accessToken: accessToken)
+        try await doConnect(accessToken: self.accessToken)
     }
 
     func doConnect(accessToken: String?) async throws {

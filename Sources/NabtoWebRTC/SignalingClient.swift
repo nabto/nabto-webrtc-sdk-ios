@@ -84,12 +84,6 @@ public protocol SignalingClient {
     func connect() async throws
 
     /**
-     * Asynchronously attempt to make an authorized connection to the signaling service.
-     * @param accessToken Access token that will be used to establish an authorized connection.
-     */
-    func connect(accessToken: String) async throws
-
-    /**
      * Close the signaling client.
      * This will send a CHANNEL_CLOSED message to the peer before closing the underlying websocket connection.
      */
@@ -130,6 +124,14 @@ public protocol SignalingClient {
 }
 
 /**
+ * Represents errors that can occur in SignalingClient
+ */
+public enum SignalingClientError: Error {
+    case connectError(String)
+    case runtimeError(String)
+}
+
+/**
  * This struct is used in createSignalingClient() to set product ID, device ID and other options for the client connection.
  */
 public struct SignalingClientOptions {
@@ -137,17 +139,20 @@ public struct SignalingClientOptions {
     let productId: String
     let deviceId: String
     let requireOnline: Bool
+    let accessToken: String?
 
     public init(
         productId: String,
         deviceId: String,
         endpointUrl: String? = nil,
-        requireOnline: Bool? = nil
+        requireOnline: Bool? = nil,
+        accessToken: String? = nil
     ) {
         self.productId = productId
         self.deviceId = deviceId
         self.endpointUrl = endpointUrl ?? "https://\(self.productId).webrtc.nabto.net"
         self.requireOnline = requireOnline ?? false
+        self.accessToken = accessToken
     }
 }
 
@@ -157,5 +162,11 @@ public struct SignalingClientOptions {
  */
 public func createSignalingClient(_ options: SignalingClientOptions) -> SignalingClient {
     let opts = options
-    return SignalingClientImpl(endpointUrl: opts.endpointUrl, productId: opts.productId, deviceId: opts.deviceId, requireOnline: opts.requireOnline)
+    return SignalingClientImpl(
+        endpointUrl: opts.endpointUrl,
+        productId: opts.productId,
+        deviceId: opts.deviceId,
+        requireOnline: opts.requireOnline,
+        accessToken: opts.accessToken
+    )
 }
