@@ -12,15 +12,15 @@ public enum SignalingErrorCode: String {
 }
 
 /**
- * LocalizedError representing an error occurring on a Signaling channel
+ * SignalingError represents errors that are received from or sent to the device peer.
  */
 public struct SignalingError: LocalizedError {
     private(set) var errorCode: SignalingErrorCode
     private(set) var errorMessage: String
     private(set) var isRemote: Bool
     public var errorDescription: String? { return self.errorMessage }
-
-    init(errorCode: SignalingErrorCode, errorMessage: String, isRemote: Bool = false) {
+    
+    public init(errorCode: SignalingErrorCode, errorMessage: String, isRemote: Bool = false) {
         self.errorCode = errorCode
         self.errorMessage = errorMessage
         self.isRemote = isRemote

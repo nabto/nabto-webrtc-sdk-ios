@@ -27,10 +27,11 @@ let package = Package(
         .target(
             name: "NabtoWebRTCUtil",
             dependencies: [
-                .product(name: "SwiftJWT", package: "Swift-JWT")
+                .product(name: "SwiftJWT", package: "Swift-JWT"),
+                .byName(name: "NabtoWebRTC")
             ]),
         .testTarget(
             name: "NabtoWebRTCTests",
-            dependencies: ["NabtoWebRTC"]),
+            dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil"]),
     ]
 )

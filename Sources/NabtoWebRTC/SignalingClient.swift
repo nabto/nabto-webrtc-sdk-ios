@@ -12,6 +12,19 @@ public enum SignalingConnectionState: String {
 }
 
 /**
+ * Hint about the state of the remote peer. The state is only updated in
+ * certain situations and in some cases it does not reflect the actual state
+ * of the remote peer.
+ */
+public enum SignalingChannelState : String {
+    case new = "NEW"
+    case online = "ONLINE"
+    case offline = "OFFLINE"
+    case failed = "FAILED"
+    case closed = "CLOSED"
+}
+
+/**
  * Observer interface for SignalingClient callbacks
  */
 public protocol SignalingClientObserver: AnyObject {
@@ -21,6 +34,33 @@ public protocol SignalingClientObserver: AnyObject {
      * @param connectionState The new state that the SignalingClient is in
      */
     func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState)
+
+    /**
+     * SignalingClient received a message from the camera
+     * @param client The SignalingClient that received the message
+     * @param message The received message
+     */
+    func signalingClient(_ client: SignalingClient, didGetMessage message: JSONValue)
+
+    /**
+     * SignalingClient channel state changed
+     * @param client The SignalingClient whose state changed
+     * @param channelState The new SignalingChannelState
+     */
+    func signalingClient(_ client: SignalingClient, didChannelStateChange channelState: SignalingChannelState)
+
+    /**
+     * SignalingClient got an error
+     * @param client The SignalingClient that the error occurred on
+     * @param error The error that occurred
+     */
+    func signalingClient(_ client: SignalingClient, didError error: Error)
+
+    /**
+     * SignalingClient reconnected
+     * @param client The SignalingClient that reconnected
+     */
+    func signalingClientDidSignalingReconnect(_ client: SignalingClient)
 }
 
 /**
@@ -29,14 +69,14 @@ public protocol SignalingClientObserver: AnyObject {
  */
 public protocol SignalingClient {
     /**
-     * The signaling channel that can be used to communicate with a camera peer.
-     */
-    var signalingChannel: SignalingChannel! { get }
-
-    /**
      * The current connection state of the client.
      */
     var connectionState: SignalingConnectionState { get }
+
+    /**
+     * The current channel state of the client.
+     */
+    var channelState: SignalingChannelState { get }
 
     /**
      * Asynchronously attempt to make an anonymous connection to the signaling service.
@@ -44,16 +84,31 @@ public protocol SignalingClient {
     func connect() async throws
 
     /**
-     * Asynchronously attempt to make an authorized connection to the signaling service.
-     * @param accessToken Access token that will be used to establish an authorized connection.
-     */
-    func connect(accessToken: String) async throws
-
-    /**
      * Close the signaling client.
      * This will send a CHANNEL_CLOSED message to the peer before closing the underlying websocket connection.
      */
     func close()
+
+    /**
+     * Send a message across to the peer
+     * @param msg The message to send
+     */
+    func sendMessage(_ msg: JSONValue)
+
+    /**
+     * Send an error across to the peer
+     * @param errorCode The error code to send
+     * öparam errorMessage An optional message to explain the error
+     */
+    func sendError(errorCode: String, errorMessage: String)
+
+    /**
+     * Trigger a ping to the backend to test that the connection is alive.
+     *
+     * If the connection is dead it will be reconnected.
+     * Any result is reported to the observers on their didSignalingError and didSignalingReconnect functions.
+     */
+     func checkAlive()
 
     /**
      * Add an observer to this signaling client.
@@ -69,6 +124,14 @@ public protocol SignalingClient {
 }
 
 /**
+ * Represents errors that can occur in SignalingClient
+ */
+public enum SignalingClientError: Error {
+    case connectError(String)
+    case runtimeError(String)
+}
+
+/**
  * This struct is used in createSignalingClient() to set product ID, device ID and other options for the client connection.
  */
 public struct SignalingClientOptions {
@@ -76,17 +139,20 @@ public struct SignalingClientOptions {
     let productId: String
     let deviceId: String
     let requireOnline: Bool
+    let accessToken: String?
 
     public init(
         productId: String,
         deviceId: String,
         endpointUrl: String? = nil,
-        requireOnline: Bool? = nil
+        requireOnline: Bool? = nil,
+        accessToken: String? = nil
     ) {
         self.productId = productId
         self.deviceId = deviceId
         self.endpointUrl = endpointUrl ?? "https://\(self.productId).webrtc.nabto.net"
         self.requireOnline = requireOnline ?? false
+        self.accessToken = accessToken
     }
 }
 
@@ -96,5 +162,11 @@ public struct SignalingClientOptions {
  */
 public func createSignalingClient(_ options: SignalingClientOptions) -> SignalingClient {
     let opts = options
-    return SignalingClientImpl(endpointUrl: opts.endpointUrl, productId: opts.productId, deviceId: opts.deviceId, requireOnline: opts.requireOnline)
+    return SignalingClientImpl(
+        endpointUrl: opts.endpointUrl,
+        productId: opts.productId,
+        deviceId: opts.deviceId,
+        requireOnline: opts.requireOnline,
+        accessToken: opts.accessToken
+    )
 }

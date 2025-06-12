@@ -1,30 +1,22 @@
 import Foundation
 
-struct ReliabilityMessage: Codable {
+struct ReliabilityData: Codable {
     enum MessageType: String, Codable {
         case ack = "ACK"
-        case message = "MESSAGE"
+        case data = "DATA"
     }
 
     let type: MessageType
     let seq: Int
-    let message: String?
-
-    static func fromJson(_ json: String) throws -> ReliabilityMessage {
-        return try JSONDecoder().decode(ReliabilityMessage.self, from: json.data(using: .utf8)!)
-    }
-
-    static func toJson(_ msg: ReliabilityMessage) -> String {
-        return String(data: try! JSONEncoder().encode(msg), encoding: .utf8)!
-    }
+    let data: JSONValue?
 }
 
 protocol ReliabilityHandler: AnyObject {
-    func sendRoutingMessage(_ msg: ReliabilityMessage)
+    func sendRoutingMessage(_ msg: ReliabilityData)
 }
 
 class Reliability {
-    private var unackedMessages: [ReliabilityMessage] = []
+    private var unackedMessages: [ReliabilityData] = []
     private var recvSeq = 0
     private var sendSeq = 0
     private weak var handler: ReliabilityHandler?
@@ -33,11 +25,11 @@ class Reliability {
         self.handler = handler
     }
 
-    func sendReliableMessage(_ message: String) {
-        let encoded = ReliabilityMessage(
-            type: .message,
+    func sendReliableMessage(_ data: JSONValue) {
+        let encoded = ReliabilityData(
+            type: .data,
             seq: sendSeq,
-            message: message
+            data: data
         )
         sendSeq += 1
         unackedMessages.append(encoded)
@@ -52,7 +44,7 @@ class Reliability {
         sendUnackedMessages()
     }
 
-    func handleRoutingMessage(_ message: ReliabilityMessage) -> String? {
+    func handleRoutingMessage(_ message: ReliabilityData) -> JSONValue? {
         if message.type == .ack {
             handleAck(message)
             return nil
@@ -61,7 +53,7 @@ class Reliability {
         }
     }
 
-    private func handleReliabilityMessage(_ message: ReliabilityMessage) -> String? {
+    private func handleReliabilityMessage(_ message: ReliabilityData) -> JSONValue? {
         if message.seq <= recvSeq {
             // Message was expected or retransmitted
             sendAck(message.seq)
@@ -69,23 +61,23 @@ class Reliability {
 
         if message.seq != recvSeq {
             // Message is out of order
-            // @TODO: Logging
+            Log.reliability.info("Received a message with seq \(message.seq), the expected recvSeq is \(self.recvSeq). This is expected on initial connect or on reconnect.")
             return nil
         }
 
         recvSeq += 1
-        return message.message
+        return message.data
     }
 
-    private func handleAck(_ ack: ReliabilityMessage) {
+    private func handleAck(_ ack: ReliabilityData) {
         if let first = unackedMessages.first { 
             if first.seq == ack.seq {
                 unackedMessages.remove(at: 0)
             } else {
-                // @TODO logging
+                Log.reliability.info("Received an ACK for sequence number \(ack.seq) but first unacked data item has sequence number \(first.seq)")
             }
         } else {
-            // @TODO: Log that ACK was received but unacked messages is empty
+            Log.reliability.info("Received ACK but there is no unacked data.")
         }
     }
 
@@ -96,7 +88,7 @@ class Reliability {
     }
 
     private func sendAck(_ seq: Int) {
-        let ack = ReliabilityMessage(type: .ack, seq: seq, message: nil)
+        let ack = ReliabilityData(type: .ack, seq: seq, data: nil)
         handler?.sendRoutingMessage(ack)
     }
 }
