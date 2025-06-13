@@ -1,0 +1,1515 @@
+openapi: 3.0.3
+info:
+  title: Elysia Documentation
+  description: Development documentation
+  version: 0.0.0
+paths:
+  /v1/client/connect:
+    post:
+      parameters: []
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  deviceOnline:
+                    type: boolean
+                  channelId:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+                  - deviceOnline
+                  - channelId
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  deviceOnline:
+                    type: boolean
+                  channelId:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+                  - deviceOnline
+                  - channelId
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  deviceOnline:
+                    type: boolean
+                  channelId:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+                  - deviceOnline
+                  - channelId
+        "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      operationId: postV1ClientConnect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          text/plain:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+  /v1/device/connect:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: authorization
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  signalingUrl:
+                    type: string
+                  extra_field_in_the_response:
+                    type: string
+                required:
+                  - signalingUrl
+        "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "403":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      operationId: postV1DeviceConnect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          text/plain:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+  /test/client/:
+    post:
+      parameters: []
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                  deviceId:
+                    type: string
+                  endpointUrl:
+                    type: string
+                  testId:
+                    type: string
+                required:
+                  - productId
+                  - deviceId
+                  - endpointUrl
+                  - testId
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                  deviceId:
+                    type: string
+                  endpointUrl:
+                    type: string
+                  testId:
+                    type: string
+                required:
+                  - productId
+                  - deviceId
+                  - endpointUrl
+                  - testId
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                  deviceId:
+                    type: string
+                  endpointUrl:
+                    type: string
+                  testId:
+                    type: string
+                required:
+                  - productId
+                  - deviceId
+                  - endpointUrl
+                  - testId
+        "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                failHttp:
+                  type: boolean
+                failWs:
+                  type: boolean
+                extraClientConnectResponseData:
+                  type: boolean
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                failHttp:
+                  type: boolean
+                failWs:
+                  type: boolean
+                extraClientConnectResponseData:
+                  type: boolean
+          text/plain:
+            schema:
+              type: object
+              properties:
+                failHttp:
+                  type: boolean
+                failWs:
+                  type: boolean
+                extraClientConnectResponseData:
+                  type: boolean
+  /test/client/{testId}/connect-device:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdConnect-device
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/client/{testId}/disconnect-device:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdDisconnect-device
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/client/{testId}/drop-device-messages:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdDrop-device-messages
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/client/{testId}/disconnect-client:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdDisconnect-client
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/client/{testId}/drop-client-messages:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdDrop-client-messages
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/client/{testId}/wait-for-device-messages:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items: {}
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdWait-for-device-messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+                timeout:
+                  type: number
+              required:
+                - messages
+                - timeout
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+                timeout:
+                  type: number
+              required:
+                - messages
+                - timeout
+          text/plain:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+                timeout:
+                  type: number
+              required:
+                - messages
+                - timeout
+  /test/client/{testId}/send-device-messages:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdSend-device-messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+              required:
+                - messages
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+              required:
+                - messages
+          text/plain:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+              required:
+                - messages
+  /test/client/{testId}/send-device-error:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdSend-device-error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+          text/plain:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+  /test/client/{testId}/send-new-message-type:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdSend-new-message-type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              properties: {}
+          text/plain:
+            schema:
+              type: object
+              properties: {}
+  /test/client/{testId}:
+    delete:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+      operationId: deleteTestClientByTestId
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/:
+    post:
+      parameters: []
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                  deviceId:
+                    type: string
+                  endpointUrl:
+                    type: string
+                  testId:
+                    type: string
+                  accessToken:
+                    type: string
+                required:
+                  - productId
+                  - deviceId
+                  - endpointUrl
+                  - testId
+                  - accessToken
+        "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                failHttp:
+                  type: boolean
+                failWs:
+                  type: boolean
+                extraDeviceConnectResponseData:
+                  type: boolean
+  /test/device/{testId}/clients:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: string
+                required:
+                  - clientId
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: string
+                required:
+                  - clientId
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: string
+                required:
+                  - clientId
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClients
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/{testId}/clients/{clientId}/connect:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdConnect
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+  /test/device/{testId}/clients/{clientId}/disconnect:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdDisconnect
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+  /test/device/{testId}/clients/{clientId}/drop-client-messages:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdDrop-client-messages
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+  /test/device/{testId}/disconnect-device:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdDisconnect-device
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/{testId}/drop-device-messages:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdDrop-device-messages
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/{testId}/clients/{clientId}/wait-for-messages:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdWait-for-messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+                timeout:
+                  type: number
+              required:
+                - messages
+                - timeout
+  /test/device/{testId}/clients/{clientId}/send-messages:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdSend-messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items: {}
+              required:
+                - messages
+  /test/device/{testId}/clients/{clientId}/send-error:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdSend-error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+          text/plain:
+            schema:
+              type: object
+              properties:
+                errorCode:
+                  type: string
+                errorMessage:
+                  type: string
+              required:
+                - errorCode
+  /test/device/{testId}/send-new-message-type:
+    post:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdSend-new-message-type
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/{testId}:
+    delete:
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+      operationId: deleteTestDeviceByTestId
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+  /test/device/{testId}/clients/{clientId}/wait-for-error:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: clientId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errorCode:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - errorCode
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestDeviceByTestIdClientsByClientIdWait-for-error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timeout:
+                  type: number
+              required:
+                - timeout
+components:
+  schemas: {}
