@@ -8,7 +8,11 @@ public enum SignalingMessageType: String, Codable {
     case setupResponse = "SETUP_RESPONSE"
 }
 
-public struct SignalingIceServer: Codable {
+public protocol SignalingMessage {
+    func toJson() -> JSONValue
+}
+
+public struct SignalingIceServer: Codable, SignalingMessage {
     public var urls: [String]
     public var credential: String?
     public var username: String?
@@ -21,6 +25,23 @@ public struct SignalingIceServer: Codable {
         self.urls = urls
         self.credential = credential
         self.username = username
+    }
+
+    public func toJson() -> JSONValue {
+        var object: [String: JSONValue]
+
+        if let credential = credential {
+            object["credential"] = .string(credential)
+        }
+
+        if let username = username {
+            object["username"] = .string(username)
+        }
+
+        let mapped = urls.map { url in JSONValue.string(url)}
+        object["urls"] = .array(mapped)
+
+        return .object(object)
     }
 
     public static func fromJson(_ json: JSONValue) -> SignalingIceServer? {
@@ -41,7 +62,7 @@ public struct SignalingIceServer: Codable {
     }
 }
 
-public struct SignalingCandidate: Codable {
+public struct SignalingCandidate: Codable, SignalingMessage {
     public struct Candidate: Codable {
         public var candidate: String
         public var sdpMid: String?
@@ -68,23 +89,23 @@ public struct SignalingCandidate: Codable {
 
     public func toJson() -> JSONValue {
         var jsonCandidate: [String: JSONValue] = [:]
-        jsonCandidate["candidate"] = JSONValue.string(candidate.candidate)
+        jsonCandidate["candidate"] = .string(candidate.candidate)
 
         if let sdpMid = candidate.sdpMid {
-            jsonCandidate["sdpMid"] = JSONValue.string(sdpMid)
+            jsonCandidate["sdpMid"] = .string(sdpMid)
         }
 
         if let sdpMLineIndex = candidate.sdpMLineIndex {
-            jsonCandidate["sdpMLineIndex"] = JSONValue.number(Double(sdpMLineIndex))
+            jsonCandidate["sdpMLineIndex"] = .number(Double(sdpMLineIndex))
         }
 
         if let usernameFragment = candidate.usernameFragment {
-            jsonCandidate["usernameFragment"] = JSONValue.string(usernameFragment)
+            jsonCandidate["usernameFragment"] = .string(usernameFragment)
         }
 
         return JSONValue.object([
-            "type": JSONValue.string(type.rawValue),
-            "candidate": JSONValue.object(jsonCandidate)
+            "type": .string(type.rawValue),
+            "candidate": .object(jsonCandidate)
         ])
     }
 
@@ -106,45 +127,7 @@ public struct SignalingCandidate: Codable {
     }
 }
 
-public struct SignalingSetupRequest: Codable {
-    public var type = SignalingMessageType.setupRequest
-
-    public init() {}
-
-    public func toJson() -> JSONValue {
-        return JSONValue.object(["type": JSONValue.string(type.rawValue)])
-    }
-
-    public static func fromJson(_ json: JSONValue) -> SignalingSetupRequest? {
-        return SignalingSetupRequest()
-    }
-}
-
-public struct SignalingSetupResponse: Codable {
-    public var type = SignalingMessageType.setupResponse
-    public var iceServers: [SignalingIceServer]
-
-    public init(iceServers: [SignalingIceServer]) {
-        self.iceServers = iceServers
-    }
-
-    public static func fromJson(_ json: JSONValue) -> SignalingSetupResponse? {
-        guard let jsonIceServers = json.asObject?["iceServers"]?.asArray else {
-            return nil
-        }
-
-        var iceServers: [SignalingIceServer] = []
-        for iceServer in jsonIceServers {
-            if let signalingIceServer = SignalingIceServer.fromJson(iceServer) {
-                iceServers.append(signalingIceServer)
-            }
-        }
-
-        return SignalingSetupResponse(iceServers: iceServers)
-    }
-}
-
-public struct SignalingDescription: Codable {
+public struct SignalingDescription: Codable, SignalingMessage {
     public struct Description: Codable {
         public var type: String
         public var sdp: String
@@ -161,11 +144,11 @@ public struct SignalingDescription: Codable {
     }
 
     public func toJson() -> JSONValue {
-        return JSONValue.object([
-            "type": JSONValue.string(type.rawValue),
-            "description": JSONValue.object([
-                "type": JSONValue.string(description.type),
-                "sdp": JSONValue.string(description.sdp)
+        return .object([
+            "type": .string(type.rawValue),
+            "description": .object([
+                "type": .string(description.type),
+                "sdp": .string(description.sdp)
             ])
         ])
     }
@@ -183,6 +166,52 @@ public struct SignalingDescription: Codable {
             type: jsonDescType,
             sdp: jsonDescSdp
         )
+    }
+}
+
+public struct SignalingSetupRequest: Codable, SignalingMessage {
+    public var type = SignalingMessageType.setupRequest
+
+    public init() {}
+
+    public func toJson() -> JSONValue {
+        return JSONValue.object(["type": JSONValue.string(type.rawValue)])
+    }
+
+    public static func fromJson(_ json: JSONValue) -> SignalingSetupRequest? {
+        return SignalingSetupRequest()
+    }
+}
+
+public struct SignalingSetupResponse: Codable, SignalingMessage {
+    public var type = SignalingMessageType.setupResponse
+    public var iceServers: [SignalingIceServer]
+
+    public init(iceServers: [SignalingIceServer]) {
+        self.iceServers = iceServers
+    }
+
+    public func toJson() -> JSONValue {
+        let jsonIceServers = iceServers.map { iceServer in iceServer.toJson() }
+        return .object([
+            "type": .string(type.rawValue),
+            "iceServers": .array(jsonIceServers)
+        ])
+    }
+
+    public static func fromJson(_ json: JSONValue) -> SignalingSetupResponse? {
+        guard let jsonIceServers = json.asObject?["iceServers"]?.asArray else {
+            return nil
+        }
+
+        var iceServers: [SignalingIceServer] = []
+        for iceServer in jsonIceServers {
+            if let signalingIceServer = SignalingIceServer.fromJson(iceServer) {
+                iceServers.append(signalingIceServer)
+            }
+        }
+
+        return SignalingSetupResponse(iceServers: iceServers)
     }
 }
 
@@ -241,5 +270,26 @@ public struct SignalingMessageUnion {
         }
 
         return result
+    }
+}
+
+public struct WebrtcSignalingMessage {
+    public var candidate: SignalingCandidate?
+    public var description: SignalingDescription?
+
+    public static func fromJson(_ msg: JSONValue) -> WebrtcSignalingMessage {
+        let union = SignalingMessageUnion.fromJson(msg)
+        return WebrtcSignalingMessage(
+            candidate: union.candidate,
+            description: union.description
+        )
+    }
+
+    public static func fromJsonString(_ msg: String) -> WebrtcSignalingMessage {
+        let union = SignalingMessageUnion.fromJsonString(msg)
+        return WebrtcSignalingMessage(
+            candidate: union.candidate,
+            description: union.description
+        )
     }
 }
