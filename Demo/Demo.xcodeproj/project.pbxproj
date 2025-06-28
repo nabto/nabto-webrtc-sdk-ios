@@ -129,7 +129,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */,
-				D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference "../../nabto-webrtc-sdk-ios" */,
+				D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference ".." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7808E3032DC843B80082C0EC /* Products */;
@@ -361,9 +361,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference "../../nabto-webrtc-sdk-ios" */ = {
+		D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../nabto-webrtc-sdk-ios";
+			relativePath = ..;
 		};
 /* End XCLocalSwiftPackageReference section */
 

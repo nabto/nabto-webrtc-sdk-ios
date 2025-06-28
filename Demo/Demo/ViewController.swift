@@ -20,12 +20,11 @@ class ViewController: UIViewController {
     var factory: RTCPeerConnectionFactory! = nil
     var peerConnection: RTCPeerConnection! = nil
     var remoteTrack: RTCVideoTrack! = nil
-    var polite = false
-    var makingOffer = false
-    var ignoreOffer = false
+    var perfectNegotiation: PerfectNegotiation! = nil
 
     // Nabto Signaling
     var signalingClient: SignalingClient? = nil
+    var messageTransport: MessageTransport? = nil
     let signer = JWTMessageSigner(sharedSecret: sharedSecret, keyId: "default")
 
     func initPeerConnectionFactory() {
@@ -52,15 +51,18 @@ class ViewController: UIViewController {
             SignalingClientOptions(
                 productId: productId,
                 deviceId: deviceId
-            ))
+            )
+        )
 
-        Task {
-            do {
-                try await signalingClient?.connect()
-                self.onClientConnected()
-            } catch {
-                print("Error occurred in connect \(error)")
-            }
+        do {
+            messageTransport = try createClientMessageTransport(
+                client: signalingClient!,
+                options: .sharedSecret(sharedSecret: sharedSecret)
+            )
+            messageTransport?.addObserver(self)
+            try signalingClient?.connect()
+        } catch {
+            print(error)
         }
     }
 
@@ -87,159 +89,37 @@ class ViewController: UIViewController {
         container.layoutIfNeeded()
     }
 
-    private func onClientConnected() {
-        guard let signalingClient = signalingClient else {
-            // Impossible code branch
-            fatalError("onClientConnected was called but signalingClient is nil")
-        }
-
-        let jsonEncoder = JSONEncoder()
-        let setupRequestMessage = SignalingSetupRequest()
-        let signed = try! signer.signMessage(setupRequestMessage.toJson())
-
-        signalingClient.addObserver(self)
-        signalingClient.sendMessage(signed)
-    }
-
-    private func setupPeerConnection(_ iceServers: [RTCIceServer]) {
+    private func setupPeerConnection(_ iceServers: [SignalingIceServer]) {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         let config = RTCConfiguration()
-        config.iceServers = iceServers
-
-        peerConnection = factory.peerConnection(
-            with: config, constraints: constraints, delegate: self)
-    }
-
-    private func addIceCandidate(_ cand: SignalingCandidate.Candidate) {
-        let remoteCandidate = RTCIceCandidate(
-            sdp: cand.candidate, sdpMLineIndex: 0, sdpMid: cand.sdpMid)
-        peerConnection.add(
-            remoteCandidate,
-            completionHandler: { err in
-                if let err = err, !self.ignoreOffer {
-                    print("addIceCandidate error: \(err)")
-                }
-            })
-    }
-
-    private func setRemoteDescription(_ desc: SignalingDescription.Description) {
-        let collision =
-            desc.type == "offer" && (makingOffer || peerConnection.signalingState != .stable)
-
-        ignoreOffer = !polite && collision
-        if ignoreOffer {
-            return
-        }
-
-        let type = RTCSessionDescription.type(for: desc.type)
-        let desc = RTCSessionDescription(type: type, sdp: desc.sdp)
-
-        self.peerConnection.setRemoteDescription(desc) { err in
-            if err != nil {
-                print("setRemoteDescription failed: \(String(describing: err))")
-                return
-            }
-
-            self.peerConnection.setLocalDescriptionWithCompletionHandler { err in
-                if err != nil {
-                    print("setLocalDescription failed: \(String(describing: err))")
-                    return
-                }
-
-                self.sendDescription(self.peerConnection.localDescription)
-            }
-        }
-    }
-
-    private func sendDescription(_ desc: RTCSessionDescription?) {
-        do {
-            if let desc = desc {
-                let signalingDescription = SignalingDescription(
-                    type: RTCSessionDescription.string(for: desc.type), sdp: desc.sdp)
-                let signed = try signer.signMessage(signalingDescription.toJson())
-                signalingClient?.sendMessage(signed)
-            }
-        } catch {
-            print("sendDescription error: \(error)")
-        }
-    }
-
-    private func sendIceCandidate(_ iceCandidate: RTCIceCandidate) {
-        do {
-            let signalingCandidate = SignalingCandidate(
-                candidate: iceCandidate.sdp,
-                sdpMid: iceCandidate.sdpMid,
-                sdpMLineIndex: Int(iceCandidate.sdpMLineIndex)
+        config.iceServers = iceServers.map { iceServer in
+            RTCIceServer(
+                urlStrings: iceServer.urls,
+                username: iceServer.username,
+                credential: iceServer.credential
             )
-            let signed = try signer.signMessage(signalingCandidate.toJson())
-            signalingClient?.sendMessage(signed)
-        } catch {
-            print("sendIceCandidate error: \(error)")
         }
+
+        peerConnection = factory.peerConnection(with: config, constraints: constraints, delegate: self)
     }
 }
 
-extension ViewController: SignalingClientObserver {
-    func signalingClient(
-        _ client: any NabtoWebRTC.SignalingClient,
-        didConnectionStateChange connectionState: NabtoWebRTC.SignalingConnectionState
-    ) {
+extension ViewController: MessageTransportObserver {
+    func messageTransport(_ transport: any MessageTransport, didGet message: WebrtcSignalingMessage) {
+        perfectNegotiation.onMessage(message)
     }
 
-    func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) {
-        do {
-            let verified = try signer.verifyMessage(message)
-            let msg = SignalingMessageUnion.fromJson(verified)
-
-            if let desc = msg.description {
-                setRemoteDescription(desc.description)
-            }
-
-            if let cand = msg.candidate {
-                addIceCandidate(cand.candidate)
-            }
-
-            if msg.setupRequest != nil {
-                fatalError("Received createRequest but I'm a client?")
-            }
-
-            if let response = msg.setupResponse {
-                var iceServers: [RTCIceServer] = []
-                for iceServer in response.iceServers {
-                    let rtcIceServer = RTCIceServer(
-                        urlStrings: iceServer.urls,
-                        username: iceServer.username,
-                        credential: iceServer.credential
-                    )
-                    iceServers.append(rtcIceServer)
-                }
-
-                setupPeerConnection(iceServers)
-            }
-        } catch {
-            print("Error in SignalingChannel didGetMessage: \(error)")
-        }
+    func messageTransport(_ transport: any MessageTransport, didError error: any Error) {
+        print("MessageTransport error: \(error)")
     }
 
-    func signalingClient(
-        _ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState
-    ) {
-        print("Signaling channel state changed to \(channelState)")
-    }
-
-    func signalingClient(_ client: any SignalingClient, didError error: Error) {
-        print("Signaling channel error: \(error)")
-    }
-
-    func signalingClientDidSignalingReconnect(_ client: any SignalingClient) {
-        print("Signaling reconnect requested")
+    func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) {
+        setupPeerConnection(iceServers)
     }
 }
 
 extension ViewController: RTCPeerConnectionDelegate {
-    func peerConnection(
-        _ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState
-    ) {
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {
         print("RTCSignalingState ==> \(stateChanged)")
     }
 
@@ -251,26 +131,15 @@ extension ViewController: RTCPeerConnectionDelegate {
         print("RTCMediaStream was removed")
     }
 
-    func peerConnection(
-        _ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState
-    ) {
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         print("RTCIceConnectionState ==> \(newState)")
     }
 
-    func peerConnection(
-        _ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState
-    ) {
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {
         print("RTCIceGatheringState ==> \(newState)")
     }
 
-    func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate)
-    {
-        sendIceCandidate(candidate)
-    }
-
-    func peerConnection(
-        _ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]
-    ) {
+    func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {
         print("Ice candidates were removed")
     }
 
@@ -278,13 +147,13 @@ extension ViewController: RTCPeerConnectionDelegate {
         print("Data channel \(dataChannel.channelId) was opened")
     }
 
+    func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate)
+    {
+        perfectNegotiation.onIceCandidate(candidate)
+    }
+
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {
-        self.makingOffer = true
-        peerConnection.setLocalDescriptionWithCompletionHandler { err in
-            if err == nil {
-                self.makingOffer = false
-            }
-        }
+        perfectNegotiation.onNegotiationNeeded()
     }
 
     func peerConnection(

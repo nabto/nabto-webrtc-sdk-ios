@@ -42,29 +42,27 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         self.reliabilityLayer = Reliability(handler: self)
     }
 
-    func connect() async throws {
-        try await doConnect(accessToken: self.accessToken)
-    }
-
-    func doConnect(accessToken: String?) async throws {
+    func connect() throws {
         if (connectionState != .new) {
             throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
         }
-
         connectionState = .connecting
-        let response = try await backend.doClientConnect(accessToken)
-        
-        self.connectionId = response.channelId
-        if let deviceOnline = response.deviceOnline {
-            self.channelState = deviceOnline ? .online : .offline
-        }
 
-        if self.requireOnline && self.channelState != .online {
-            throw SignalingClientError.connectError("The requested device is not online, try again later.")
-        }
+        Task {
+            let response = try await backend.doClientConnect(accessToken)
+            
+            self.connectionId = response.channelId
+            if let deviceOnline = response.deviceOnline {
+                self.channelState = deviceOnline ? .online : .offline
+            }
 
-        self.signalingUrl = response.signalingUrl
-        webSocket.connect(response.signalingUrl, observer: self)
+            if self.requireOnline && self.channelState != .online {
+                throw SignalingClientError.connectError("The requested device is not online, try again later.")
+            }
+
+            self.signalingUrl = response.signalingUrl
+            webSocket.connect(response.signalingUrl, observer: self)
+        }
     }
 
     func close() {

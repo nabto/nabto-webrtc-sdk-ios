@@ -13,14 +13,9 @@ public protocol MessageTransport {
     func removeObserver(_ observer: MessageTransportObserver)
 }
 
-public struct ClientMessageTransportSharedSecretOptions {
-    public var sharedSecret: String
-    public var keyId: String?
-}
-
 public enum ClientMessageTransportOptions {
     case none
-    case sharedSecret(ClientMessageTransportSharedSecretOptions)
+    case sharedSecret(sharedSecret: String, keyId: String? = nil)
 }
 
 public func createClientMessageTransport(client: SignalingClient, options: ClientMessageTransportOptions) throws -> MessageTransport {
@@ -48,8 +43,8 @@ public class ClientMessageTransportImpl: MessageTransport {
         switch options {
             case .none:
                 self.messageSigner = NoneMessageSigner()
-            case .sharedSecret(let sharedSecretOptions):
-                self.messageSigner = JWTMessageSigner(sharedSecret: sharedSecretOptions.sharedSecret, keyId: sharedSecretOptions.keyId)
+            case .sharedSecret(let sharedSecret, let keyId):
+                self.messageSigner = JWTMessageSigner(sharedSecret: sharedSecret, keyId: keyId)
         }
     }
 

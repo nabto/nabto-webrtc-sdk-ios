@@ -28,7 +28,7 @@ public struct SignalingIceServer: Codable, SignalingMessage {
     }
 
     public func toJson() -> JSONValue {
-        var object: [String: JSONValue]
+        var object: [String: JSONValue] = [:]
 
         if let credential = credential {
             object["credential"] = .string(credential)
@@ -276,6 +276,11 @@ public struct SignalingMessageUnion {
 public struct WebrtcSignalingMessage {
     public var candidate: SignalingCandidate?
     public var description: SignalingDescription?
+
+    public init(candidate: SignalingCandidate? = nil, description: SignalingDescription? = nil) {
+        self.candidate = candidate
+        self.description = description
+    }
 
     public static func fromJson(_ msg: JSONValue) -> WebrtcSignalingMessage {
         let union = SignalingMessageUnion.fromJson(msg)

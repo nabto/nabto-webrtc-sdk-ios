@@ -81,7 +81,7 @@ public protocol SignalingClient {
     /**
      * Asynchronously attempt to make an anonymous connection to the signaling service.
      */
-    func connect() async throws
+    func connect() throws
 
     /**
      * Close the signaling client.
