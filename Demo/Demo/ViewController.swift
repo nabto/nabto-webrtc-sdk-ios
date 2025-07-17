@@ -60,7 +60,7 @@ class ViewController: UIViewController {
                 options: .sharedSecret(sharedSecret: sharedSecret)
             )
             messageTransport?.addObserver(self)
-            try signalingClient?.connect()
+            try signalingClient?.start()
         } catch {
             print(error)
         }
@@ -101,6 +101,7 @@ class ViewController: UIViewController {
         }
 
         peerConnection = factory.peerConnection(with: config, constraints: constraints, delegate: self)
+        perfectNegotiation = PerfectNegotiation(peerConnection: peerConnection, messageTransport: messageTransport!)
     }
 }
 

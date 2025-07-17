@@ -42,7 +42,7 @@ class SignalingClientImpl: SignalingClient, WebSocketObserver, ReliabilityHandle
         self.reliabilityLayer = Reliability(handler: self)
     }
 
-    func connect() throws {
+    func start() throws {
         if (connectionState != .new) {
             throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
         }
