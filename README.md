@@ -24,10 +24,18 @@ A test video feed can be started at https://nabto.github.io/nabto-webrtc-sdk-js/
 
 The SDK is currently only available through the [Swift Package Manager](https://www.swift.org/documentation/package-manager/)
 
-To install via the Swift Package Manager, add it through xcode by pressing `File > Add Package Dependencies...` or add the following line to your `Package.swift` file's `dependencies`:
+To install via the Swift Package Manager, add it through xcode by pressing `File > Add Package Dependencies...`.
+
+Alternatively, if you are using a `Package.swift` file, add the following line to `dependencies`:
 
 ```swift
-.package(url: "https://github.com/nabto/nabto-webrtc-sdk-ios.git", from: "0.0.1")
+.package(url: "https://github.com/nabto/nabto-webrtc-sdk-ios.git", from: "x.x.x")
+```
+
+Then add `NabtoWebRTC` and `NabtoWebRTCUtil` to your target's dependencies
+
+```swift
+.target(name: "example", dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil"]),
 ```
 
 ## Run integration tests
