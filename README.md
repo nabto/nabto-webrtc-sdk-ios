@@ -32,7 +32,7 @@ Alternatively, if you are using a `Package.swift` file, add the following line t
 .package(url: "https://github.com/nabto/nabto-webrtc-sdk-ios.git", from: "x.x.x")
 ```
 
-Then add `NabtoWebRTC` and `NabtoWebRTCUtil` to your target's dependencies
+Then add `NabtoWebRTC` and `NabtoWebRTCUtil` to your target's dependencies (replace `x.x.x` with the latest [release](https://github.com/nabto/nabto-webrtc-sdk-ios/releases))
 
 ```swift
 .target(name: "example", dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil"]),
