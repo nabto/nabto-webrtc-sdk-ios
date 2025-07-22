@@ -6,7 +6,12 @@ info:
 paths:
   /v1/client/connect:
     post:
-      parameters: []
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: authorization
+          required: false
       responses:
         "200":
           description: success
@@ -60,6 +65,27 @@ paths:
                   - deviceOnline
                   - channelId
         "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
           description: failure
           content:
             application/json:
@@ -320,11 +346,14 @@ paths:
                     type: string
                   testId:
                     type: string
+                  accessToken:
+                    type: string
                 required:
                   - productId
                   - deviceId
                   - endpointUrl
                   - testId
+                  - accessToken
             multipart/form-data:
               schema:
                 type: object
@@ -337,11 +366,14 @@ paths:
                     type: string
                   testId:
                     type: string
+                  accessToken:
+                    type: string
                 required:
                   - productId
                   - deviceId
                   - endpointUrl
                   - testId
+                  - accessToken
             text/plain:
               schema:
                 type: object
@@ -354,11 +386,14 @@ paths:
                     type: string
                   testId:
                     type: string
+                  accessToken:
+                    type: string
                 required:
                   - productId
                   - deviceId
                   - endpointUrl
                   - testId
+                  - accessToken
         "400":
           description: failure
           content:
@@ -386,7 +421,15 @@ paths:
                   type: boolean
                 failWs:
                   type: boolean
+                endpointUrl:
+                  description: specify the endpoint url the server returns in the test create
+                    response and the websocket url. Format http://<ip>:<port>
+                  type: string
                 extraClientConnectResponseData:
+                  type: boolean
+                requireAccessToken:
+                  description: Set to true to force the client to use an access token when
+                    connecting
                   type: boolean
           multipart/form-data:
             schema:
@@ -396,7 +439,15 @@ paths:
                   type: boolean
                 failWs:
                   type: boolean
+                endpointUrl:
+                  description: specify the endpoint url the server returns in the test create
+                    response and the websocket url. Format http://<ip>:<port>
+                  type: string
                 extraClientConnectResponseData:
+                  type: boolean
+                requireAccessToken:
+                  description: Set to true to force the client to use an access token when
+                    connecting
                   type: boolean
           text/plain:
             schema:
@@ -406,7 +457,15 @@ paths:
                   type: boolean
                 failWs:
                   type: boolean
+                endpointUrl:
+                  description: specify the endpoint url the server returns in the test create
+                    response and the websocket url. Format http://<ip>:<port>
+                  type: string
                 extraClientConnectResponseData:
+                  type: boolean
+                requireAccessToken:
+                  description: Set to true to force the client to use an access token when
+                    connecting
                   type: boolean
   /test/client/{testId}/connect-device:
     post:
@@ -668,6 +727,7 @@ paths:
                   type: array
                   items: {}
                 timeout:
+                  format: double
                   type: number
               required:
                 - messages
@@ -680,6 +740,7 @@ paths:
                   type: array
                   items: {}
                 timeout:
+                  format: double
                   type: number
               required:
                 - messages
@@ -692,9 +753,107 @@ paths:
                   type: array
                   items: {}
                 timeout:
+                  format: double
                   type: number
               required:
                 - messages
+                - timeout
+  /test/client/{testId}/wait-for-device-error:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdWait-for-device-error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timeout:
+                  format: double
+                  type: number
+              required:
+                - timeout
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                timeout:
+                  format: double
+                  type: number
+              required:
+                - timeout
+          text/plain:
+            schema:
+              type: object
+              properties:
+                timeout:
+                  format: double
+                  type: number
+              required:
                 - timeout
   /test/client/{testId}/send-device-messages:
     post:
@@ -879,6 +1038,128 @@ paths:
                 description: failure
                 type: string
       operationId: postTestClientByTestIdSend-new-message-type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              properties: {}
+          text/plain:
+            schema:
+              type: object
+              properties: {}
+  /test/client/{testId}/send-new-field-in-known-message-type:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+            multipart/form-data:
+              schema:
+                type: object
+                properties: {}
+            text/plain:
+              schema:
+                type: object
+                properties: {}
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdSend-new-field-in-known-message-type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              properties: {}
+          text/plain:
+            schema:
+              type: object
+              properties: {}
+  /test/client/{testId}/get-active-websockets:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: testId
+          required: true
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeWebSockets:
+                    type: number
+                required:
+                  - activeWebSockets
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  activeWebSockets:
+                    type: number
+                required:
+                  - activeWebSockets
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  activeWebSockets:
+                    type: number
+                required:
+                  - activeWebSockets
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                description: failure
+                type: string
+            multipart/form-data:
+              schema:
+                description: failure
+                type: string
+            text/plain:
+              schema:
+                description: failure
+                type: string
+      operationId: postTestClientByTestIdGet-active-websockets
       requestBody:
         required: true
         content:
@@ -1511,5 +1792,201 @@ paths:
                   type: number
               required:
                 - timeout
+  /v1/ice-servers:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: authorization
+          required: false
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  iceServers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        credential:
+                          type: string
+                        urls:
+                          type: array
+                          items:
+                            type: string
+                      required:
+                        - urls
+                required:
+                  - iceServers
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  iceServers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        credential:
+                          type: string
+                        urls:
+                          type: array
+                          items:
+                            type: string
+                      required:
+                        - urls
+                required:
+                  - iceServers
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  iceServers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        credential:
+                          type: string
+                        urls:
+                          type: array
+                          items:
+                            type: string
+                      required:
+                        - urls
+                required:
+                  - iceServers
+        "400":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "403":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      operationId: postV1Ice-servers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
+          text/plain:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                productId:
+                  type: string
+              required:
+                - deviceId
+                - productId
 components:
   schemas: {}

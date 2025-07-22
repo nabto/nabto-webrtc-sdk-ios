@@ -19,7 +19,7 @@ public class NoneMessageSigner: MessageSigner {
             }
             return result
         } else {
-            throw SignalingError(errorCode: .verificationError, errorMessage: "Expected a signing message of type NONE but got \(type)")
+            throw SignalingError(errorCode: SignalingErrorCode.verificationError, errorMessage: "Expected a signing message of type NONE but got \(type)")
         }
     }
 }

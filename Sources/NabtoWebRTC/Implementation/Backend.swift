@@ -38,7 +38,15 @@ class Backend {
             request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
         }
 
-        let (responseData, x) = try await URLSession.shared.data(for: request)
+        let (responseData, res) = try await URLSession.shared.data(for: request)
+        guard let response = res as? HTTPURLResponse else {
+            throw SignalingClientError.connectError("Failed to complete HTTP client connect")
+        }
+
+        if response.statusCode != 200 {
+            throw SignalingClientError.connectError("Failed to complete HTTP client connect, status code: \(response.statusCode)")
+        }
+
         let clientConnectResponse = try decoder.decode(ClientConnectResponse.self, from: responseData)
         return clientConnectResponse
     }

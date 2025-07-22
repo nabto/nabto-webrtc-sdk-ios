@@ -1,7 +1,7 @@
 import OSLog
 
 internal struct Log {
-    private static var subsystem = Bundle.main.bundleIdentifier!
+    private static var subsystem = "NabtoWebRTC"
 
     static let signalingClient = CustomLogger(subsystem: subsystem, category: "SignalingClient")
     static let webSocket = CustomLogger(subsystem: subsystem, category: "WebSocketConnection")

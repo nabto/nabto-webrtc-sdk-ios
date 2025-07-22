@@ -47,11 +47,10 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         self.observer?.socket(self, didCloseOrError: "closed")
     }
 
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCompleteWithError error: Error?) {
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         if error != nil {
-            // @TODO: sending "error" seems incorrect? review this later
             self.observer?.socket(self, didCloseOrError: "error")
-        }   
+        }
     }
 
     func connect(_ endpoint: String, observer: WebSocketObserver) {
