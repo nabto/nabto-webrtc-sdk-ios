@@ -25,6 +25,7 @@ class Reliability {
         self.handler = handler
     }
 
+    // TODO this function could be called from multiple concurrent threads which could lead to concurrency problems.
     func sendReliableMessage(_ data: JSONValue) {
         let encoded = ReliabilityData(
             type: .data,
@@ -69,8 +70,10 @@ class Reliability {
         return message.data
     }
 
+    // TODO handle ack could be called from the websocket receive thread while a
+    // message is being sent, both modifying unackedMessages.
     private func handleAck(_ ack: ReliabilityData) {
-        if let first = unackedMessages.first { 
+        if let first = unackedMessages.first {
             if first.seq == ack.seq {
                 unackedMessages.remove(at: 0)
             } else {

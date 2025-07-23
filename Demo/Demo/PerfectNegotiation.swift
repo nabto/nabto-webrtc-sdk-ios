@@ -1,6 +1,8 @@
 import WebRTC
 import NabtoWebRTCUtil
 
+// TODO can this be moved to a common package? maybe NabtoWebRTCUtil if the
+// WebRTC dependency is always the same on iOS.
 class PerfectNegotiation {
     let peerConnection: RTCPeerConnection
     let messageTransport: MessageTransport

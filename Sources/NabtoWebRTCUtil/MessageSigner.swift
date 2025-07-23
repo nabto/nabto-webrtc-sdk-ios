@@ -1,5 +1,7 @@
 import NabtoWebRTC
 
+
+// TODO the MessageSigner should not be public.
 /**
  * Generic interface for signing JSONValue messages.
  */

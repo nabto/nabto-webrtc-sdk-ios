@@ -1,6 +1,8 @@
 import Foundation
 import NabtoWebRTC
 
+// TODO can we move this to the implementation folder and only expose the two relevant WebRTCSignalingMessages SignalingCandidate and SignalingDescription?
+
 public enum SignalingMessageType: String, Codable {
     case description = "DESCRIPTION"
     case candidate = "CANDIDATE"
@@ -255,7 +257,7 @@ public struct SignalingMessageUnion {
 
         let possibleMessage = try? decoder.decode(PossibleSignalingMessage.self, from: data)
         var result = SignalingMessageUnion()
-        
+
         switch possibleMessage?.type {
             case .candidate:
                 result.candidate = try? decoder.decode(SignalingCandidate.self, from: data)
