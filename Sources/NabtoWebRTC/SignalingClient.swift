@@ -18,6 +18,7 @@ public enum SignalingConnectionState: String {
  */
 public enum SignalingChannelState : String {
     case new = "NEW"
+    // TODO use connected/disconnected as in the js sdk
     case online = "ONLINE"
     case offline = "OFFLINE"
     case failed = "FAILED"
@@ -60,6 +61,7 @@ public protocol SignalingClientObserver: AnyObject {
      * SignalingClient reconnected
      * @param client The SignalingClient that reconnected
      */
+     // TODO the name in the JS SDK is on("connectionreconnect") not on("signalingreconnect")
     func signalingClientDidSignalingReconnect(_ client: SignalingClient)
 }
 
@@ -79,6 +81,7 @@ public protocol SignalingClient {
     var channelState: SignalingChannelState { get }
 
     /**
+     * TODO fix docs
      * Asynchronously attempt to make an anonymous connection to the signaling service.
      */
     func start() throws
@@ -98,8 +101,10 @@ public protocol SignalingClient {
     /**
      * Send an error across to the peer
      * @param errorCode The error code to send
+     * //TODO @
      * öparam errorMessage An optional message to explain the error
      */
+    // TODO: use sendError(error: SignalingError)
     func sendError(errorCode: String, errorMessage: String)
 
     /**
@@ -108,6 +113,7 @@ public protocol SignalingClient {
      * If the connection is dead it will be reconnected.
      * Any result is reported to the observers on their didSignalingError and didSignalingReconnect functions.
      */
+    // TODO indentation
      func checkAlive()
 
     /**

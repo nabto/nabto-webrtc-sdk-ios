@@ -56,7 +56,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
                 handleError(error)
                 return
             }
-            
+
             self.connectionId = response.channelId
             if let deviceOnline = response.deviceOnline {
                 self.channelState = deviceOnline ? .online : .offline
@@ -127,6 +127,12 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func handleReceivedMessages() {
+        // TODO in java this was not neccessary as there was only a single
+        // thread receiving messages and handling them on the TCP socket. That
+        // meant messages would always just be handled serially. This seems also
+        // to be the case here since there are a loop in the websocket
+        // connection implementation which receives a message and handles it
+        // synchronously.
         if !handlingReceivedMessages {
             if !receivedMessages.isEmpty {
                 handlingReceivedMessages = true
@@ -186,6 +192,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     private func notifyConnectionState() {
+        // TODO is it safe and advisable to modify a dictionary which is being iterated?
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
@@ -242,6 +249,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
 
 
     func addObserver(_ observer: SignalingClientObserver) {
+        // TODO it seems like dictionaries in swift are not thread safe.
         let id = ObjectIdentifier(observer)
         observations[id] = Observation(observer: observer)
     }

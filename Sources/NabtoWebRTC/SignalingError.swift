@@ -9,6 +9,8 @@ public enum SignalingErrorCode {
     case channelClosed
     case channelNotFound
     case noMoreChannels
+    // TODO missing ACCESS_DENIED
+    // TODO missing INTERNAL_ERROR
     case unknown(String)
 
     public var stringValue: String {
@@ -37,12 +39,13 @@ public enum SignalingErrorCode {
 /**
  * SignalingError represents errors that are received from or sent to the device peer.
  */
+// TODO why is it a LocalizedError? Neither the errorMessage in the protocol is not localized.
 public struct SignalingError: LocalizedError {
     private(set) var errorCode: SignalingErrorCode
     private(set) var errorMessage: String
     private(set) var isRemote: Bool
     public var errorDescription: String? { return self.errorMessage }
-    
+    // TODO remove isRemote
     public init(errorCode: SignalingErrorCode, errorMessage: String, isRemote: Bool = false) {
         self.errorCode = errorCode
         self.errorMessage = errorMessage
