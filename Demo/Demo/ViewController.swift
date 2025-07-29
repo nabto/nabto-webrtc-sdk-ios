@@ -7,6 +7,7 @@
 
 import NabtoWebRTC
 import NabtoWebRTCUtil
+import NabtoWebRTCUtilPerfectNegotiation
 import UIKit
 import WebRTC
 
