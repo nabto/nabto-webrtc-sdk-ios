@@ -72,10 +72,10 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         if closed { return }
         closed = true
 
-        sendError(
-            errorCode: "CHANNEL_CLOSED",
+        sendError(.init(
+            errorCode: SignalingErrorCode.channelClosed,
             errorMessage: "Signaling client channel was closed"
-        )
+        ))
         webSocket.close()
         connectionState = .closed
         channelState = .disconnected
@@ -85,13 +85,12 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         webSocket.sendMessage(self.connectionId, msg)
     }
 
-
     func sendMessage(_ msg: JSONValue) {
         reliabilityLayer.sendReliableMessage(msg)
     }
 
-    func sendError(errorCode: String, errorMessage: String) {
-        webSocket.sendError(self.connectionId, errorCode)
+    func sendError(_ error: SignalingError) {
+        webSocket.sendError(self.connectionId, error)
     }
 
     func checkAlive() {
@@ -198,7 +197,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
                 continue
             }
 
-            observer.signalingClientDidSignalingReconnect(self)
+            observer.signalingClientDidConnectionReconnect(self)
         }
     }
 
