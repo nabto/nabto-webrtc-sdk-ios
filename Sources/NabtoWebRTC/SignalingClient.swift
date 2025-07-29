@@ -18,8 +18,8 @@ public enum SignalingConnectionState: String {
  */
 public enum SignalingChannelState : String {
     case new = "NEW"
-    case online = "ONLINE"
-    case offline = "OFFLINE"
+    case connected = "CONNECTED"
+    case disconnected = "DISCONNECTED"
     case failed = "FAILED"
     case closed = "CLOSED"
 }

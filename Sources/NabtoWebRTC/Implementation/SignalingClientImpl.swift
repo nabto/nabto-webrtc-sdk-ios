@@ -24,9 +24,6 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     private var webSocket = WebSocketConnection()
     private var connectionId = "";
 
-    private var handlingReceivedMessages = false
-    private var receivedMessages: [JSONValue?] = []
-
     private var isReconnecting = false
     private var reconnectCounter = 0
     private var openedWebSockets = 0
@@ -59,10 +56,10 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
             
             self.connectionId = response.channelId
             if let deviceOnline = response.deviceOnline {
-                self.channelState = deviceOnline ? .online : .offline
+                self.channelState = deviceOnline ? .connected : .disconnected
             }
 
-            if self.requireOnline && self.channelState != .online {
+            if self.requireOnline && self.channelState != .connected {
                 handleError(SignalingClientError.connectError("The requested device is not online, try again later."))
             }
 
@@ -81,7 +78,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         )
         webSocket.close()
         connectionState = .closed
-        channelState = .offline
+        channelState = .disconnected
     }
 
     func sendRoutingMessage(_ msg: ReliabilityData) {
@@ -112,31 +109,18 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func handlePeerConnected() {
-        channelState = .online
+        channelState = .connected
         reliabilityLayer.handlePeerConnected()
     }
 
     func handlePeerOffline() {
-        channelState = .offline
+        channelState = .disconnected
     }
 
     func handleRoutingMessage(_ message: ReliabilityData) {
         let reliableMessage = reliabilityLayer.handleRoutingMessage(message)
-        receivedMessages.append(reliableMessage)
-        handleReceivedMessages()
-    }
-
-    func handleReceivedMessages() {
-        if !handlingReceivedMessages {
-            if !receivedMessages.isEmpty {
-                handlingReceivedMessages = true
-                let msg = receivedMessages.removeFirst()
-                if let msg = msg {
-                    notifyMessage(msg)
-                }
-                handlingReceivedMessages = false
-                handleReceivedMessages()
-            }
+        if let msg = reliableMessage {
+            notifyMessage(msg)
         }
     }
 
