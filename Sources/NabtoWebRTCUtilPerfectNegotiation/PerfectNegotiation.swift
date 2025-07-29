@@ -1,7 +1,7 @@
 import WebRTC
 import NabtoWebRTCUtil
 
-class PerfectNegotiation {
+public class PerfectNegotiation {
     let peerConnection: RTCPeerConnection
     let messageTransport: MessageTransport
 
@@ -10,7 +10,7 @@ class PerfectNegotiation {
     var makingOffer = false
     var ignoreOffer = false
 
-    init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
+    public init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
         self.peerConnection = peerConnection
         self.messageTransport = messageTransport
     }

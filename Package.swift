@@ -13,7 +13,11 @@ let package = Package(
             targets: ["NabtoWebRTC"]),
         .library(
             name: "NabtoWebRTCUtil",
-            targets: ["NabtoWebRTCUtil"])
+            targets: ["NabtoWebRTCUtil"]),
+        .library(
+            name: "NabtoWebRTCUtilPerfectNegotiation",
+            targets: ["NabtoWebRTCUtilPerfectNegotiation"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0"),
@@ -38,11 +42,7 @@ let package = Package(
             ]),
         .target(
             name: "NabtoWebRTCUtilPerfectNegotiation",
-            dependencies: [
-                .byName(name: "NabtoWebRTC"),
-                .byName(name: "NabtoWebRTCUtil"),
-                .byName(name: "WebRTC")
-            ]),
+            dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil", "WebRTC"]),
         .testTarget(
             name: "NabtoWebRTCTests",
             dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil"]),
