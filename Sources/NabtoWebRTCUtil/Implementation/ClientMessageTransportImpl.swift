@@ -125,7 +125,7 @@ extension ClientMessageTransportImpl: SignalingClientObserver {
         
     }
 
-    public func signalingClientDidSignalingReconnect(_ client: any SignalingClient) {
+    public func signalingClientDidConnectionReconnect(_ client: any SignalingClient) {
         
     }
 }

@@ -3,7 +3,7 @@ import NabtoWebRTC
 /**
  * Generic interface for signing JSONValue messages.
  */
-public protocol MessageSigner {
+protocol MessageSigner {
     /**
      * Sign a JSONValue
      *

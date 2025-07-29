@@ -107,7 +107,7 @@ public protocol SignalingClient {
      * If the connection is dead it will be reconnected.
      * Any result is reported to the observers on their didSignalingError and didConnectionReconnect functions.
      */
-     func checkAlive()
+    func checkAlive()
 
     /**
      * Add an observer to this signaling client.
