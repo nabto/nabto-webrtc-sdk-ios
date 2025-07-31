@@ -15,6 +15,11 @@ protocol ReliabilityHandler: AnyObject {
     func sendRoutingMessage(_ msg: ReliabilityData)
 }
 
+@globalActor
+fileprivate actor ReliabilityActor: GlobalActor {
+    static let shared = ReliabilityActor()
+}
+
 class Reliability {
     private var unackedMessages: [ReliabilityData] = []
     private var recvSeq = 0
@@ -25,6 +30,7 @@ class Reliability {
         self.handler = handler
     }
 
+    @ReliabilityActor
     func sendReliableMessage(_ data: JSONValue) {
         let encoded = ReliabilityData(
             type: .data,
@@ -46,7 +52,7 @@ class Reliability {
 
     func handleRoutingMessage(_ message: ReliabilityData) -> JSONValue? {
         if message.type == .ack {
-            handleAck(message)
+            Task { @ReliabilityActor in handleAck(message) }
             return nil
         } else {
             return handleReliabilityMessage(message)
@@ -69,6 +75,7 @@ class Reliability {
         return message.data
     }
 
+    @ReliabilityActor
     private func handleAck(_ ack: ReliabilityData) {
         if let first = unackedMessages.first { 
             if first.seq == ack.seq {

@@ -1,4 +1,5 @@
 import Dispatch
+import Foundation
 
 let CHECK_ALIVE_TIMEOUT = 1000.0
 
@@ -10,6 +11,8 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     var connectionState: SignalingConnectionState = .new { didSet { notifyConnectionState() } }
     var channelState: SignalingChannelState = .new { didSet { notifyChannelState() } }
 
+    private let lock = NSLock()
+    private let observerLock = NSLock()
     private var observations = [ObjectIdentifier: Observation]()
     private var closed = false
     private var endpointUrl: String
@@ -40,10 +43,12 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func start() throws {
-        if (connectionState != .new) {
-            throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
+        try lock.withLock {
+            if (connectionState != .new) {
+                throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
+            }
+            connectionState = .connecting
         }
-        connectionState = .connecting
 
         Task {
             let response: ClientConnectResponse
@@ -69,8 +74,13 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func close() {
-        if closed { return }
+        lock.lock()
+        if closed {
+            lock.unlock()
+            return
+        }
         closed = true
+        lock.unlock()
 
         sendError(.init(
             errorCode: SignalingErrorCode.channelClosed,
@@ -86,7 +96,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func sendMessage(_ msg: JSONValue) {
-        reliabilityLayer.sendReliableMessage(msg)
+        Task { @ReliabilityActor in reliabilityLayer.sendReliableMessage(msg) }
     }
 
     func sendError(_ error: SignalingError) {
@@ -225,13 +235,17 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
 
 
     func addObserver(_ observer: SignalingClientObserver) {
-        let id = ObjectIdentifier(observer)
-        observations[id] = Observation(observer: observer)
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations[id] = Observation(observer: observer)
+        }
     }
 
     func removeObserver(_ observer: SignalingClientObserver) {
-        let id = ObjectIdentifier(observer)
-        observations.removeValue(forKey: id)
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations.removeValue(forKey: id)
+        }
     }
 }
 

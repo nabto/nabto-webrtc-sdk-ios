@@ -1,6 +1,11 @@
 import Foundation
 import NabtoWebRTC
 
+@globalActor
+fileprivate actor ClientMessageTransportActor: GlobalActor {
+    static let shared = ClientMessageTransportActor()
+}
+
 class ClientMessageTransportImpl: MessageTransport {
     struct Observation {
         weak var observer: MessageTransportObserver?
@@ -10,6 +15,7 @@ class ClientMessageTransportImpl: MessageTransport {
         case setup, signaling
     }
 
+    private let observerLock = NSLock()
     private var observations = [ObjectIdentifier: Observation]()
     private var state = State.setup
     private let client: SignalingClient
@@ -25,9 +31,15 @@ class ClientMessageTransportImpl: MessageTransport {
         }
     }
 
-    public func start() throws {
+    public func start() {
         client.addObserver(self)
-        try sendSignalingMessage(SignalingSetupRequest())
+        Task {
+            do {
+                try await sendSignalingMessage(SignalingSetupRequest())
+            } catch {
+                notifyError(error)
+            }
+        }
     }
 
     public func close() {
@@ -35,30 +47,42 @@ class ClientMessageTransportImpl: MessageTransport {
     }
 
     public func addObserver(_ observer: any MessageTransportObserver) {
-        let id = ObjectIdentifier(observer)
-        observations[id] = Observation(observer: observer)
-    }
-
-    public func removeObserver(_ observer: any MessageTransportObserver) {
-        let id = ObjectIdentifier(observer)
-        observations.removeValue(forKey: id)
-    }
-
-    public func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) throws {
-        if let candidate = message.candidate {
-            try sendSignalingMessage(candidate)
-        } else if let description = message.description {
-            try sendSignalingMessage(description)
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations[id] = Observation(observer: observer)
         }
     }
 
-    private func sendSignalingMessage(_ message: SignalingMessage) throws {
+    public func removeObserver(_ observer: any MessageTransportObserver) {
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations.removeValue(forKey: id)
+        }
+    }
+
+    public func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) {
+        Task {
+            do {
+                if let candidate = message.candidate {
+                    try await sendSignalingMessage(candidate)
+                } else if let description = message.description {
+                    try await sendSignalingMessage(description)
+                }
+            } catch {
+                notifyError(error)
+            }
+        }
+    }
+
+    @ClientMessageTransportActor
+    private func sendSignalingMessage(_ message: SignalingMessage) async throws {
         let encoded = message.toJson()
         let signed = try messageSigner.signMessage(encoded)
         client.sendMessage(signed)
     }
 
-    private func handleMessage(_ message: JSONValue) {
+    @ClientMessageTransportActor
+    private func handleMessage(_ message: JSONValue) async {
         do {
             let verified = try messageSigner.verifyMessage(message)
             let decoded = SignalingMessageUnion.fromJson(verified)
@@ -114,7 +138,7 @@ extension ClientMessageTransportImpl: SignalingClientObserver {
     }
 
     public func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) {
-        handleMessage(message)
+        Task { await handleMessage(message) }
     }
 
     public func signalingClient(_ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState) {
