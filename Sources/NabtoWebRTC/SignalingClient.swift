@@ -18,8 +18,8 @@ public enum SignalingConnectionState: String {
  */
 public enum SignalingChannelState : String {
     case new = "NEW"
-    case online = "ONLINE"
-    case offline = "OFFLINE"
+    case connected = "CONNECTED"
+    case disconnected = "DISCONNECTED"
     case failed = "FAILED"
     case closed = "CLOSED"
 }
@@ -60,7 +60,7 @@ public protocol SignalingClientObserver: AnyObject {
      * SignalingClient reconnected
      * @param client The SignalingClient that reconnected
      */
-    func signalingClientDidSignalingReconnect(_ client: SignalingClient)
+    func signalingClientDidConnectionReconnect(_ client: SignalingClient)
 }
 
 /**
@@ -79,7 +79,7 @@ public protocol SignalingClient {
     var channelState: SignalingChannelState { get }
 
     /**
-     * Asynchronously attempt to make an anonymous connection to the signaling service.
+     * Attempt to make an anonymous connection to the signaling service.
      */
     func start() throws
 
@@ -97,18 +97,17 @@ public protocol SignalingClient {
 
     /**
      * Send an error across to the peer
-     * @param errorCode The error code to send
-     * öparam errorMessage An optional message to explain the error
+     * @param error The SignalingError to send
      */
-    func sendError(errorCode: String, errorMessage: String)
+    func sendError(_ error: SignalingError)
 
     /**
      * Trigger a ping to the backend to test that the connection is alive.
      *
      * If the connection is dead it will be reconnected.
-     * Any result is reported to the observers on their didSignalingError and didSignalingReconnect functions.
+     * Any result is reported to the observers on their didSignalingError and didConnectionReconnect functions.
      */
-     func checkAlive()
+    func checkAlive()
 
     /**
      * Add an observer to this signaling client.

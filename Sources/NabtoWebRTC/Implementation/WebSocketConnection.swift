@@ -74,11 +74,11 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         send(routingMessage)
     }
 
-    func sendError(_ channelId: String, _ errorCode: String, _ errorMessage: String = "") {
+    func sendError(_ channelId: String, _ error: SignalingError) {
         let routingMessage = RoutingMessage(
             type: .message,
             channelId: channelId,
-            error: RoutingMessageError(code: errorCode, message: errorMessage)
+            error: RoutingMessageError(code: error.errorCode.stringValue, message: error.errorMessage)
         )
         send(routingMessage)
     }

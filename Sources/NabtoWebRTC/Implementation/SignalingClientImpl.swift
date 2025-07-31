@@ -1,4 +1,5 @@
 import Dispatch
+import Foundation
 
 let CHECK_ALIVE_TIMEOUT = 1000.0
 
@@ -10,6 +11,8 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     var connectionState: SignalingConnectionState = .new { didSet { notifyConnectionState() } }
     var channelState: SignalingChannelState = .new { didSet { notifyChannelState() } }
 
+    private let lock = NSLock()
+    private let observerLock = NSLock()
     private var observations = [ObjectIdentifier: Observation]()
     private var closed = false
     private var endpointUrl: String
@@ -23,9 +26,6 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     private var reliabilityLayer: Reliability! = nil
     private var webSocket = WebSocketConnection()
     private var connectionId = "";
-
-    private var handlingReceivedMessages = false
-    private var receivedMessages: [JSONValue?] = []
 
     private var isReconnecting = false
     private var reconnectCounter = 0
@@ -43,10 +43,12 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func start() throws {
-        if (connectionState != .new) {
-            throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
+        try lock.withLock {
+            if (connectionState != .new) {
+                throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
+            }
+            connectionState = .connecting
         }
-        connectionState = .connecting
 
         Task {
             let response: ClientConnectResponse
@@ -59,10 +61,10 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
             
             self.connectionId = response.channelId
             if let deviceOnline = response.deviceOnline {
-                self.channelState = deviceOnline ? .online : .offline
+                self.channelState = deviceOnline ? .connected : .disconnected
             }
 
-            if self.requireOnline && self.channelState != .online {
+            if self.requireOnline && self.channelState != .connected {
                 handleError(SignalingClientError.connectError("The requested device is not online, try again later."))
             }
 
@@ -72,29 +74,33 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func close() {
-        if closed { return }
+        lock.lock()
+        if closed {
+            lock.unlock()
+            return
+        }
         closed = true
+        lock.unlock()
 
-        sendError(
-            errorCode: "CHANNEL_CLOSED",
+        sendError(.init(
+            errorCode: SignalingErrorCode.channelClosed,
             errorMessage: "Signaling client channel was closed"
-        )
+        ))
         webSocket.close()
         connectionState = .closed
-        channelState = .offline
+        channelState = .disconnected
     }
 
     func sendRoutingMessage(_ msg: ReliabilityData) {
         webSocket.sendMessage(self.connectionId, msg)
     }
 
-
     func sendMessage(_ msg: JSONValue) {
-        reliabilityLayer.sendReliableMessage(msg)
+        Task { @ReliabilityActor in reliabilityLayer.sendReliableMessage(msg) }
     }
 
-    func sendError(errorCode: String, errorMessage: String) {
-        webSocket.sendError(self.connectionId, errorCode)
+    func sendError(_ error: SignalingError) {
+        webSocket.sendError(self.connectionId, error)
     }
 
     func checkAlive() {
@@ -112,31 +118,18 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func handlePeerConnected() {
-        channelState = .online
+        channelState = .connected
         reliabilityLayer.handlePeerConnected()
     }
 
     func handlePeerOffline() {
-        channelState = .offline
+        channelState = .disconnected
     }
 
     func handleRoutingMessage(_ message: ReliabilityData) {
         let reliableMessage = reliabilityLayer.handleRoutingMessage(message)
-        receivedMessages.append(reliableMessage)
-        handleReceivedMessages()
-    }
-
-    func handleReceivedMessages() {
-        if !handlingReceivedMessages {
-            if !receivedMessages.isEmpty {
-                handlingReceivedMessages = true
-                let msg = receivedMessages.removeFirst()
-                if let msg = msg {
-                    notifyMessage(msg)
-                }
-                handlingReceivedMessages = false
-                handleReceivedMessages()
-            }
+        if let msg = reliableMessage {
+            notifyMessage(msg)
         }
     }
 
@@ -214,7 +207,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
                 continue
             }
 
-            observer.signalingClientDidSignalingReconnect(self)
+            observer.signalingClientDidConnectionReconnect(self)
         }
     }
 
@@ -242,13 +235,17 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
 
 
     func addObserver(_ observer: SignalingClientObserver) {
-        let id = ObjectIdentifier(observer)
-        observations[id] = Observation(observer: observer)
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations[id] = Observation(observer: observer)
+        }
     }
 
     func removeObserver(_ observer: SignalingClientObserver) {
-        let id = ObjectIdentifier(observer)
-        observations.removeValue(forKey: id)
+        observerLock.withLock {
+            let id = ObjectIdentifier(observer)
+            observations.removeValue(forKey: id)
+        }
     }
 }
 
