@@ -57,12 +57,13 @@ class ViewController: UIViewController {
             )
 
             do {
+                try await signalingClient?.start()
+                
                 messageTransport = try await createClientMessageTransport(
                     client: signalingClient!,
                     options: .sharedSecret(sharedSecret: sharedSecret)
                 )
                 messageTransport?.addObserver(self)
-                try await signalingClient?.start()
             } catch {
                 print(error)
             }

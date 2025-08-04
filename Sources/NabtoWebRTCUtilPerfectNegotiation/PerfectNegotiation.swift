@@ -22,6 +22,12 @@ public class PerfectNegotiation {
     public init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
         self.peerConnection = peerConnection
         self.messageTransport = messageTransport
+        
+        Task {
+            for await event in eventStream {
+                await handleEvent(event)
+            }
+        }
     }
 
     public func onNegotiationNeeded() {
@@ -33,6 +39,7 @@ public class PerfectNegotiation {
     }
 
     public func onMessage(_ message: WebrtcSignalingMessage) {
+        print("**PERFECTNEGOTIATION** \(message)\n")
         eventContinuation.yield(.message(message))
     }
     

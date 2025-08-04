@@ -73,7 +73,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         }
 
         self.signalingUrl = response.signalingUrl
-        webSocket.connect(response.signalingUrl, observer: self)
+        await webSocket.connect(response.signalingUrl, observer: self)
     }
 
     func close() async {
@@ -148,7 +148,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         await setConnectionState(.connecting)
 
         if let url = self.signalingUrl {
-            webSocket.connect(url, observer: self)
+            await webSocket.connect(url, observer: self)
         }
     }
 
