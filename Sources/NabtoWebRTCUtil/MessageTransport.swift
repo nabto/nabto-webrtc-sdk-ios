@@ -10,21 +10,21 @@ public protocol MessageTransportObserver: AnyObject {
      *
      * @param message The received message.
      */
-    func messageTransport(_ transport: MessageTransport, didGet message: WebrtcSignalingMessage)
+    func messageTransport(_ transport: MessageTransport, didGet message: WebrtcSignalingMessage) async
 
     /**
      * Callback invoked if an error occurs in the MessageTransport.
      *
      * @param error The error that occurred.
      */
-    func messageTransport(_ transport: MessageTransport, didError error: Error)
+    func messageTransport(_ transport: MessageTransport, didError error: Error) async
 
     /**
      * Callback invoked when the setup phase of the MessageTransport is concluded.
      *
      * @param iceServers A list of ICE servers to use in Peer Connection.
      */
-    func messageTransport(_ transport: MessageTransport, didFinishSetup iceServers: [SignalingIceServer])
+    func messageTransport(_ transport: MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async
 }
 
 /**
@@ -45,7 +45,7 @@ public protocol MessageTransport {
      *
      * @param message The message to send.
      */
-    func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) throws
+    func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) async throws
 
     /**
      * Add an observer to receive callbacks when events occurs.
@@ -85,8 +85,8 @@ public enum ClientMessageTransportOptions {
  * @param options A ClientMessageTransportOptions object that specifies what type of message signing to use.
  * @return A client MessageTransport instance.
  */
-public func createClientMessageTransport(client: SignalingClient, options: ClientMessageTransportOptions) throws -> MessageTransport {
+public func createClientMessageTransport(client: SignalingClient, options: ClientMessageTransportOptions) async throws -> MessageTransport {
     let transport = ClientMessageTransportImpl(client: client, options: options)
-    try transport.start()
+    try await transport.start()
     return transport
 }

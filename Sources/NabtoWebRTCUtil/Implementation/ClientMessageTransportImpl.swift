@@ -25,9 +25,9 @@ class ClientMessageTransportImpl: MessageTransport {
         }
     }
 
-    public func start() throws {
+    public func start() async throws {
         client.addObserver(self)
-        try sendSignalingMessage(SignalingSetupRequest())
+        try await sendSignalingMessage(SignalingSetupRequest())
     }
 
     public func close() {
@@ -44,18 +44,18 @@ class ClientMessageTransportImpl: MessageTransport {
         observations.removeValue(forKey: id)
     }
 
-    public func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) throws {
+    public func sendWebrtcSignalingMessage(_ message: WebrtcSignalingMessage) async throws {
         if let candidate = message.candidate {
-            try sendSignalingMessage(candidate)
+            try await sendSignalingMessage(candidate)
         } else if let description = message.description {
-            try sendSignalingMessage(description)
+            try await sendSignalingMessage(description)
         }
     }
 
-    private func sendSignalingMessage(_ message: SignalingMessage) throws {
+    private func sendSignalingMessage(_ message: SignalingMessage) async throws {
         let encoded = message.toJson()
         let signed = try messageSigner.signMessage(encoded)
-        client.sendMessage(signed)
+        await client.sendMessage(signed)
     }
 
     private func handleMessage(_ message: JSONValue) {

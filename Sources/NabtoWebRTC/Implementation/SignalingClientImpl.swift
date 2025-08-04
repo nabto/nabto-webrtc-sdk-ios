@@ -7,8 +7,8 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         weak var observer: SignalingClientObserver?
     }
 
-    var connectionState: SignalingConnectionState = .new { didSet { notifyConnectionState() } }
-    var channelState: SignalingChannelState = .new { didSet { notifyChannelState() } }
+    var connectionState: SignalingConnectionState = .new
+    var channelState: SignalingChannelState = .new
 
     private var observations = [ObjectIdentifier: Observation]()
     private var closed = false
@@ -39,27 +39,37 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         self.reliabilityLayer = Reliability(handler: self)
     }
 
+    private func setConnectionState(_ state: SignalingConnectionState) async {
+        connectionState = state
+        await notifyConnectionState()
+    }
+
+    private func setChannelState(_ state: SignalingChannelState) async {
+        channelState = state
+        await notifyChannelState()
+    }
+
     func start() async throws {
         if (connectionState != .new) {
             throw SignalingClientError.connectError("SignalingClient.connect can only be called once!")
         }
-        connectionState = .connecting
+        await setConnectionState(.connecting)
 
         let response: ClientConnectResponse
         do {
             response = try await backend.doClientConnect(accessToken)
         } catch {
-            handleError(error)
+            await handleError(error)
             return
         }
         
         self.connectionId = response.channelId
         if let deviceOnline = response.deviceOnline {
-            self.channelState = deviceOnline ? .connected : .disconnected
+            await setChannelState(deviceOnline ? .connected : .disconnected)
         }
 
         if self.requireOnline && self.channelState != .connected {
-            handleError(SignalingClientError.connectError("The requested device is not online, try again later."))
+            await handleError(SignalingClientError.connectError("The requested device is not online, try again later."))
         }
 
         self.signalingUrl = response.signalingUrl
@@ -75,8 +85,8 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
             errorMessage: "Signaling client channel was closed"
         ))
         webSocket.close()
-        connectionState = .closed
-        channelState = .disconnected
+        await setConnectionState(.closed)
+        await setChannelState(.disconnected)
     }
 
     func sendRoutingMessage(_ msg: ReliabilityData) {
@@ -92,7 +102,7 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
     }
 
     func checkAlive() async {
-        self.webSocket.checkAlive(timeout: CHECK_ALIVE_TIMEOUT)
+        await self.webSocket.checkAlive(timeout: CHECK_ALIVE_TIMEOUT)
     }
 
     func handleWebSocketConnect(wasReconnected: Bool) async {
@@ -101,48 +111,48 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
         }
         await reliabilityLayer.handleConnect()
         if wasReconnected {
-            notifySignalingReconnect()
+            await notifySignalingReconnect()
         }
     }
 
     func handlePeerConnected() async {
-        channelState = .connected
+        await setChannelState(.connected)
         await reliabilityLayer.handlePeerConnected()
     }
 
     func handlePeerOffline() async {
-        channelState = .disconnected
+        await setChannelState(.disconnected)
     }
 
     func handleRoutingMessage(_ message: ReliabilityData) async {
         let reliableMessage = await reliabilityLayer.handleRoutingMessage(message)
         if let msg = reliableMessage {
-            notifyMessage(msg)
+            await notifyMessage(msg)
         }
     }
 
-    func handleError(_ error: Error) {
+    func handleError(_ error: Error) async {
         if channelState == .closed || channelState == .failed {
             return
         }
-        connectionState = .failed
-        notifyError(error)
+        await setConnectionState(.failed)
+        await notifyError(error)
     }
 
-    private func reconnect() {
+    private func reconnect() async {
         if connectionState == .failed || connectionState == .closed {
             return
         }
 
         isReconnecting = true
-        connectionState = .connecting
+        await setConnectionState(.connecting)
 
         if let url = self.signalingUrl {
             webSocket.connect(url, observer: self)
         }
     }
 
-    private func waitReconnect() {
+    private func waitReconnect() async {
         if connectionState == .failed || connectionState == .closed {
             return
         }
@@ -153,71 +163,76 @@ class SignalingClientImpl: SignalingClient, ReliabilityHandler {
 
         if reconnectCounter > 7 {
             isReconnecting = false
-            connectionState = .failed
+            await setConnectionState(.failed)
             return
         }
 
-        connectionState = .waitRetry
+        await setConnectionState(.waitRetry)
         let reconnectWait =  (1 << reconnectCounter)
         reconnectCounter += 1
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectWait)) {
-            self.reconnect()
+        Task {
+            do {
+                try await Task.sleep(nanoseconds: UInt64(reconnectWait * 1000000000))
+                await self.reconnect()
+            } catch {
+                // @TODO: Logging
+            }
         }
     }
 
-    private func notifyConnectionState() {
+    private func notifyConnectionState() async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClient(self, didConnectionStateChange: self.connectionState)
+            await observer.signalingClient(self, didConnectionStateChange: self.connectionState)
         }
     }
 
-    private func notifyChannelState() {
+    private func notifyChannelState() async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClient(self, didChannelStateChange: self.channelState)
+            await observer.signalingClient(self, didChannelStateChange: self.channelState)
         }
     }
 
-    private func notifySignalingReconnect() {
+    private func notifySignalingReconnect() async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClientDidConnectionReconnect(self)
+            await observer.signalingClientDidConnectionReconnect(self)
         }
     }
 
-    private func notifyError(_ error: Error) {
+    private func notifyError(_ error: Error) async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClient(self, didError: error)
+            await observer.signalingClient(self, didError: error)
         }
     }
 
-    private func notifyMessage(_ message: JSONValue) {
+    private func notifyMessage(_ message: JSONValue) async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
 
-            observer.signalingClient(self, didGetMessage: message)
+            await observer.signalingClient(self, didGetMessage: message)
         }
     }
 
@@ -238,7 +253,7 @@ extension SignalingClientImpl: WebSocketObserver {
         reconnectCounter = 0
         openedWebSockets += 1
         await handleWebSocketConnect(wasReconnected: openedWebSockets > 1)
-        connectionState = .connected
+        await setConnectionState(.connected)
     }
 
     func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool) async {
@@ -255,7 +270,7 @@ extension SignalingClientImpl: WebSocketObserver {
 
     func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String) async {
         let err = SignalingError(errorCode: .from(string: errorCode), errorMessage: errorMessage)
-        handleError(err)
+        await handleError(err)
     }
 
     func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) async {
@@ -264,9 +279,9 @@ extension SignalingClientImpl: WebSocketObserver {
         }
 
         if openedWebSockets == 0 {
-            handleError(SignalingClientError.runtimeError("The websocket was closed before it opened."))
+            await handleError(SignalingClientError.runtimeError("The websocket was closed before it opened."))
         } else {
-            waitReconnect()
+            await waitReconnect()
         }
     }
 }

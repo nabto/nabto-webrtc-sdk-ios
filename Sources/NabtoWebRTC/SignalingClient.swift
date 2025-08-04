@@ -33,34 +33,34 @@ public protocol SignalingClientObserver: AnyObject {
      * @param client The SignalingClient whose state has changed
      * @param connectionState The new state that the SignalingClient is in
      */
-    func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState)
+    func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState) async
 
     /**
      * SignalingClient received a message from the camera
      * @param client The SignalingClient that received the message
      * @param message The received message
      */
-    func signalingClient(_ client: SignalingClient, didGetMessage message: JSONValue)
+    func signalingClient(_ client: SignalingClient, didGetMessage message: JSONValue) async
 
     /**
      * SignalingClient channel state changed
      * @param client The SignalingClient whose state changed
      * @param channelState The new SignalingChannelState
      */
-    func signalingClient(_ client: SignalingClient, didChannelStateChange channelState: SignalingChannelState)
+    func signalingClient(_ client: SignalingClient, didChannelStateChange channelState: SignalingChannelState) async
 
     /**
      * SignalingClient got an error
      * @param client The SignalingClient that the error occurred on
      * @param error The error that occurred
      */
-    func signalingClient(_ client: SignalingClient, didError error: Error)
+    func signalingClient(_ client: SignalingClient, didError error: Error) async
 
     /**
      * SignalingClient reconnected
      * @param client The SignalingClient that reconnected
      */
-    func signalingClientDidConnectionReconnect(_ client: SignalingClient)
+    func signalingClientDidConnectionReconnect(_ client: SignalingClient) async
 }
 
 /**

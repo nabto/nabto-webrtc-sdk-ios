@@ -198,14 +198,16 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     func checkAlive(timeout: Double) async {
         let currentPongCounter = self.pongCounter
         sendPing()
-        let timeoutNanos = UInt64(timeout * 1000000)
-        do {
-            try await Task.sleep(nanoseconds: timeoutNanos)
-            if currentPongCounter == self.pongCounter {
-                await self.observer?.socket(self, didCloseOrError: "timeout")
+        Task {
+            let timeoutNanos = UInt64(timeout * 1000000)
+            do {
+                try await Task.sleep(nanoseconds: timeoutNanos)
+                if currentPongCounter == self.pongCounter {
+                    await self.observer?.socket(self, didCloseOrError: "timeout")
+                }
+            } catch {
+                Log.webSocket.warning("CheckAlive : \(error)")
             }
-        } catch {
-            Log.webSocket.warning("CheckAlive : \(error)")
         }
     }
 

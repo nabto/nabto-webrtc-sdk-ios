@@ -1,5 +1,12 @@
-import WebRTC
+import Foundation
 import NabtoWebRTCUtil
+import WebRTC
+
+fileprivate enum PerfectNegotiationEvent {
+    case negotiationNeeded
+    case iceCandidate(_ candidate: RTCIceCandidate)
+    case message(_ message: WebrtcSignalingMessage)
+}
 
 public class PerfectNegotiation {
     let peerConnection: RTCPeerConnection
@@ -9,6 +16,8 @@ public class PerfectNegotiation {
     var polite = false
     var makingOffer = false
     var ignoreOffer = false
+    
+    private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: PerfectNegotiationEvent.self)
 
     public init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
         self.peerConnection = peerConnection
@@ -16,39 +25,52 @@ public class PerfectNegotiation {
     }
 
     public func onNegotiationNeeded() {
-        self.makingOffer = true
-        peerConnection.setLocalDescriptionWithCompletionHandler { err in
-            if err == nil {
-                self.makingOffer = false
-            }
-        }
+        eventContinuation.yield(.negotiationNeeded)
     }
 
     public func onIceCandidate(_ candidate: RTCIceCandidate) {
-        sendIceCandidate(candidate)
+        eventContinuation.yield(.iceCandidate(candidate))
     }
 
     public func onMessage(_ message: WebrtcSignalingMessage) {
-        if let description = message.description?.description {
-            setRemoteDescription(description)
-        } else if let candidate = message.candidate?.candidate {
-            addIceCandidate(candidate)
+        eventContinuation.yield(.message(message))
+    }
+    
+    private func handleEvent(_ event: PerfectNegotiationEvent) async {
+        switch event {
+        case .negotiationNeeded:
+            self.makingOffer = true
+            do {
+                try await peerConnection.setLocalDescription()
+                self.makingOffer = false
+            } catch {
+                // @TODO: Better logging
+                print(error)
+            }
+            
+        case .iceCandidate(let candidate):
+            await sendIceCandidate(candidate)
+            
+        case .message(let message):
+            do {
+                if let description = message.description?.description {
+                    try await setRemoteDescription(description)
+                } else if let candidate = message.candidate?.candidate {
+                    try await addIceCandidate(candidate)
+                }
+            } catch {
+                // @TODO: Log to somewhere sensible
+                print(error)
+            }
         }
     }
 
-    private func addIceCandidate(_ cand: SignalingCandidate.Candidate) {
+    private func addIceCandidate(_ cand: SignalingCandidate.Candidate) async throws {
         let remoteCandidate = RTCIceCandidate(sdp: cand.candidate, sdpMLineIndex: 0, sdpMid: cand.sdpMid)
-        peerConnection.add(
-            remoteCandidate,
-            completionHandler: { err in
-                if let err = err, !self.ignoreOffer {
-                    print("addIceCandidate error: \(err)")
-                }
-            }
-        )
+        try await peerConnection.add(remoteCandidate)
     }
 
-    private func setRemoteDescription(_ desc: SignalingDescription.Description) {
+    private func setRemoteDescription(_ desc: SignalingDescription.Description) async throws {
         let collision = desc.type == "offer" && (makingOffer || peerConnection.signalingState != .stable)
 
         ignoreOffer = !polite && collision
@@ -58,43 +80,30 @@ public class PerfectNegotiation {
 
         let type = RTCSessionDescription.type(for: desc.type)
         let desc = RTCSessionDescription(type: type, sdp: desc.sdp)
-
-        self.peerConnection.setRemoteDescription(desc) { err in
-            if err != nil {
-                print("setRemoteDescription failed: \(String(describing: err))")
-                return
-            }
-
-            self.peerConnection.setLocalDescriptionWithCompletionHandler { err in
-                if err != nil {
-                    print("setLocalDescription failed: \(String(describing: err))")
-                    return
-                }
-
-                self.sendDescription(self.peerConnection.localDescription)
-            }
-        }
+        try await self.peerConnection.setRemoteDescription(desc)
+        try await self.peerConnection.setLocalDescription()
+        await self.sendDescription(self.peerConnection.localDescription)
     }
 
-    private func sendDescription(_ desc: RTCSessionDescription?) {
+    private func sendDescription(_ desc: RTCSessionDescription?) async {
         do {
             if let desc = desc {
                 let signalingDescription = SignalingDescription(type: RTCSessionDescription.string(for: desc.type), sdp: desc.sdp)
-                try messageTransport.sendWebrtcSignalingMessage(.init(description: signalingDescription))
+                try await messageTransport.sendWebrtcSignalingMessage(.init(description: signalingDescription))
             }
         } catch {
             print("sendDescription error: \(error)")
         }
     }
 
-    private func sendIceCandidate(_ iceCandidate: RTCIceCandidate) {
+    private func sendIceCandidate(_ iceCandidate: RTCIceCandidate) async {
         do {
             let signalingCandidate = SignalingCandidate(
                 candidate: iceCandidate.sdp,
                 sdpMid: iceCandidate.sdpMid,
                 sdpMLineIndex: Int(iceCandidate.sdpMLineIndex)
             )
-            try messageTransport.sendWebrtcSignalingMessage(.init(candidate: signalingCandidate))
+            try await  messageTransport.sendWebrtcSignalingMessage(.init(candidate: signalingCandidate))
         } catch {
             print("sendIceCandidate error: \(error)")
         }

@@ -48,22 +48,24 @@ class ViewController: UIViewController {
 
         initPeerConnectionFactory()
 
-        signalingClient = createSignalingClient(
-            SignalingClientOptions(
-                productId: productId,
-                deviceId: deviceId
+        Task {
+            signalingClient = createSignalingClient(
+                SignalingClientOptions(
+                    productId: productId,
+                    deviceId: deviceId
+                )
             )
-        )
 
-        do {
-            messageTransport = try createClientMessageTransport(
-                client: signalingClient!,
-                options: .sharedSecret(sharedSecret: sharedSecret)
-            )
-            messageTransport?.addObserver(self)
-            try signalingClient?.start()
-        } catch {
-            print(error)
+            do {
+                messageTransport = try await createClientMessageTransport(
+                    client: signalingClient!,
+                    options: .sharedSecret(sharedSecret: sharedSecret)
+                )
+                messageTransport?.addObserver(self)
+                try await signalingClient?.start()
+            } catch {
+                print(error)
+            }
         }
     }
 
@@ -107,15 +109,15 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: MessageTransportObserver {
-    func messageTransport(_ transport: any MessageTransport, didGet message: WebrtcSignalingMessage) {
+    func messageTransport(_ transport: any MessageTransport, didGet message: WebrtcSignalingMessage) async {
         perfectNegotiation.onMessage(message)
     }
 
-    func messageTransport(_ transport: any MessageTransport, didError error: any Error) {
+    func messageTransport(_ transport: any MessageTransport, didError error: any Error) async {
         print("MessageTransport error: \(error)")
     }
 
-    func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) {
+    func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async {
         setupPeerConnection(iceServers)
     }
 }

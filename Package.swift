@@ -42,7 +42,11 @@ let package = Package(
             ]),
         .target(
             name: "NabtoWebRTCUtilPerfectNegotiation",
-            dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil", "WebRTC"]),
+            dependencies: [
+                .byName(name: "NabtoWebRTC"),
+                .byName(name: "NabtoWebRTCUtil"),
+                .product(name: "WebRTC", package: "WebRTC"),
+            ]),
         .testTarget(
             name: "NabtoWebRTCTests",
             dependencies: ["NabtoWebRTC", "NabtoWebRTCUtil"]),
