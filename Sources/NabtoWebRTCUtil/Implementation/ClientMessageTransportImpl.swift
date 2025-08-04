@@ -58,7 +58,7 @@ class ClientMessageTransportImpl: MessageTransport {
         await client.sendMessage(signed)
     }
 
-    private func handleMessage(_ message: JSONValue) {
+    private func handleMessage(_ message: JSONValue) async {
         do {
             let verified = try messageSigner.verifyMessage(message)
             let decoded = SignalingMessageUnion.fromJson(verified)
@@ -66,66 +66,74 @@ class ClientMessageTransportImpl: MessageTransport {
                 case .setup:
                     if let setupResponse = decoded.setupResponse {
                         self.state = .signaling
-                        notifySetupDone(setupResponse.iceServers)
+                        await notifySetupDone(setupResponse.iceServers)
                         return
                     }
                 case .signaling:
                     if let candidate = decoded.candidate {
-                        notifyMessage(WebrtcSignalingMessage(candidate: candidate))
+                        await notifyMessage(WebrtcSignalingMessage(candidate: candidate))
                         return
                     }
 
                     if let description = decoded.description {
-                        notifyMessage(WebrtcSignalingMessage(description: description))
+                        await notifyMessage(WebrtcSignalingMessage(description: description))
                         return
                     }
             }
         } catch {
-            notifyError(error)
+            await notifyError(error)
         }
     }
 
-    private func notify(code: (_ observer: any MessageTransportObserver) -> Void) {
+    private func notifyError(_ error: Error) async {
         for (id, observation) in observations {
             guard let observer = observation.observer else {
                 observations.removeValue(forKey: id)
                 continue
             }
-            code(observer)
+            await observer.messageTransport(self, didError: error)
         }
     }
 
-    private func notifyError(_ error: Error) {
-        notify { obs in obs.messageTransport(self, didError: error) }
+    private func notifyMessage(_ message: WebrtcSignalingMessage) async {
+        for (id, observation) in observations {
+            guard let observer = observation.observer else {
+                observations.removeValue(forKey: id)
+                continue
+            }
+            await observer.messageTransport(self, didGet: message)
+        }
     }
 
-    private func notifyMessage(_ message: WebrtcSignalingMessage) {
-        notify { obs in obs.messageTransport(self, didGet: message) }
-    }
-
-    private func notifySetupDone(_ iceServers: [SignalingIceServer]) {
-        notify { obs in obs.messageTransport(self, didFinishSetup: iceServers) }
+    private func notifySetupDone(_ iceServers: [SignalingIceServer]) async {
+        for (id, observation) in observations {
+            guard let observer = observation.observer else {
+                observations.removeValue(forKey: id)
+                continue
+            }
+            await observer.messageTransport(self, didFinishSetup: iceServers)
+        }
     }
 }
 
 extension ClientMessageTransportImpl: SignalingClientObserver {
-    public func signalingClient(_ client: any SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState) {
+    public func signalingClient(_ client: any SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState) async {
         
     }
 
-    public func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) {
-        handleMessage(message)
+    public func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) async {
+        await handleMessage(message)
     }
 
-    public func signalingClient(_ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState) {
+    public func signalingClient(_ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState) async {
         
     }
 
-    public func signalingClient(_ client: any SignalingClient, didError error: any Error) {
+    public func signalingClient(_ client: any SignalingClient, didError error: any Error) async {
         
     }
 
-    public func signalingClientDidConnectionReconnect(_ client: any SignalingClient) {
+    public func signalingClientDidConnectionReconnect(_ client: any SignalingClient) async {
         
     }
 }
