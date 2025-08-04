@@ -15,7 +15,7 @@ protocol ReliabilityHandler: AnyObject {
     func sendRoutingMessage(_ msg: ReliabilityData)
 }
 
-class Reliability {
+actor Reliability {
     private var unackedMessages: [ReliabilityData] = []
     private var recvSeq = 0
     private var sendSeq = 0

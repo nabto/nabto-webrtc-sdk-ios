@@ -1,12 +1,12 @@
 import Foundation
 
 protocol WebSocketObserver: AnyObject {
-    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool)
-    func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String)
-    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String)
-    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String)
-    func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String)
-    func socketDidOpen(_ ws: WebSocketConnection)
+    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool) async
+    func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String) async
+    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String) async
+    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String) async
+    func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) async
+    func socketDidOpen(_ ws: WebSocketConnection) async
 }
 
 struct RoutingMessageError: Codable {

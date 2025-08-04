@@ -81,25 +81,25 @@ public protocol SignalingClient {
     /**
      * Attempt to make an anonymous connection to the signaling service.
      */
-    func start() throws
+    func start() async throws
 
     /**
      * Close the signaling client.
      * This will send a CHANNEL_CLOSED message to the peer before closing the underlying websocket connection.
      */
-    func close()
+    func close() async
 
     /**
      * Send a message across to the peer
      * @param msg The message to send
      */
-    func sendMessage(_ msg: JSONValue)
+    func sendMessage(_ msg: JSONValue) async
 
     /**
      * Send an error across to the peer
      * @param error The SignalingError to send
      */
-    func sendError(_ error: SignalingError)
+    func sendError(_ error: SignalingError) async
 
     /**
      * Trigger a ping to the backend to test that the connection is alive.
@@ -107,7 +107,7 @@ public protocol SignalingClient {
      * If the connection is dead it will be reconnected.
      * Any result is reported to the observers on their didSignalingError and didConnectionReconnect functions.
      */
-    func checkAlive()
+    func checkAlive() async
 
     /**
      * Add an observer to this signaling client.

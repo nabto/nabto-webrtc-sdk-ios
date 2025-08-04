@@ -11,9 +11,9 @@ import NabtoWebRTCUtilPerfectNegotiation
 import UIKit
 import WebRTC
 
-let productId = "wp-z3nyma7y"
-let deviceId = "wd-wbnx9pat7xifmbuh"
-let sharedSecret = "MySecret"
+let productId = "wp-39wu7tex"
+let deviceId = "wd-3xtqp3hy4xxy3av3"
+let sharedSecret = "59470b3f8e331d9975da366d8dc0dcf743ef6a1154a4f779932740b4d14be3ab"
 
 class ViewController: UIViewController {
     // WebRTC
