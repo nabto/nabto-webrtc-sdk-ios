@@ -9,13 +9,13 @@ fileprivate enum PerfectNegotiationEvent {
 }
 
 public class PerfectNegotiation {
-    let peerConnection: RTCPeerConnection
-    let messageTransport: MessageTransport
+    private let peerConnection: RTCPeerConnection
+    private let messageTransport: MessageTransport
 
-    var remoteTrack: RTCVideoTrack! = nil
-    var polite = false
-    var makingOffer = false
-    var ignoreOffer = false
+    private var remoteTrack: RTCVideoTrack! = nil
+    private var polite = false
+    private var makingOffer = false
+    private var ignoreOffer = false
     
     private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: PerfectNegotiationEvent.self)
 

@@ -50,11 +50,11 @@ struct ClientDeviceTests {
 
     @Test("CDT6 Test sending an error from device")
     func client_device_test6() async throws {
-        let client = service.createSignalingClient()
-        try client.start()
+        let client = await service.createSignalingClient()
+        try await client.start()
         try await service.expectConnectionStates([.connecting, .connected])
         try await service.connectDevice()
-        try await service.expectChannelStates([.offline, .online])
+        try await service.expectChannelStates([.disconnected, .connected])
         
         try await service.sendDeviceError(errorCode: "MyError", errorMessage: "Some error message")
         let error = try await service.expectSomeError()

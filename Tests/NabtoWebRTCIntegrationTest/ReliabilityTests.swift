@@ -64,7 +64,7 @@ struct ReliabilityTests {
         try await clientTestInstance.dropClientMessages()
         try await clientTestInstance.sendMessageToClient([testObject])
         try await clientTestInstance.expectMessages([testObject])
-        signalingClient.checkAlive()
+        await signalingClient.checkAlive()
         let testObject2 = TestObject(foo: "2")
         try await clientTestInstance.sendMessageToClient([testObject2])
         try await clientTestInstance.expectMessages([testObject2])
@@ -72,10 +72,10 @@ struct ReliabilityTests {
 
     @Test("RT6 Test remote peer resends unacked messages")
     func reliability_test6() async throws {
-        try signalingClient.start()
+        try await signalingClient.start()
         try await clientTestInstance.connectDevice()
         try await clientTestInstance.dropDeviceMessages()
-        signalingClient.sendMessage(testObjectEncodedAsJsonValue)
+        await signalingClient.sendMessage(testObjectEncodedAsJsonValue)
         try await clientTestInstance.disconnectDevice()
         try await clientTestInstance.connectDevice()
         try await clientTestInstance.waitForDeviceToReceiveMessages(messages: [testObject], timeoutMillis: 1000)

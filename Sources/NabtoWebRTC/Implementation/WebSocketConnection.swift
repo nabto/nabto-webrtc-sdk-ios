@@ -98,32 +98,45 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     private var socket: URLSessionWebSocketTask? = nil
     private var isConnected = false
     private var pongCounter = 0
+
+    private typealias EventStream = AsyncStream<SocketEvent>
     private var socketStream: SocketStream?
-    private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: SocketEvent.self)
+    private var eventStream: EventStream?
+    private var eventContinuation: EventStream.Continuation?
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol prtcl: String?) {
         isConnected = true
-        eventContinuation.yield(.didOpenWithProtocol(protocol: prtcl))
+        eventContinuation?.yield(.didOpenWithProtocol(protocol: prtcl))
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         isConnected = false
-        eventContinuation.yield(.didCloseWith(closeCode: closeCode, reason: reason))
-        eventContinuation.finish()
+        eventContinuation?.yield(.didCloseWith(closeCode: closeCode, reason: reason))
+        eventContinuation?.finish()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         if error != nil {
-            eventContinuation.yield(.didCompleteWithError(error: error))
-            eventContinuation.finish()
+            eventContinuation?.yield(.didCompleteWithError(error: error))
+            eventContinuation?.finish()
         }
     }
 
     func connect(_ endpoint: String, observer: WebSocketObserver) async {
         self.observer = observer
+        self.eventContinuation?.finish()
+
+        let (stream, cont) = AsyncStream.makeStream(of: SocketEvent.self)
+        self.eventStream = stream
+        self.eventContinuation = cont
+
         let urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
         socket = urlSession.webSocketTask(with: URL(string: endpoint)!)
         Task {
+            guard let eventStream = eventStream else {
+                return
+            }
+
             for await event in eventStream {
                 switch event {
                     case .didCloseWith(_, _):

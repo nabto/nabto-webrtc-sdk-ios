@@ -49,7 +49,7 @@ struct ClientConnectivityTestsFailOptions {
         let _ = try await service.expectSomeError()
     }
 
-    @Test("CCT5 Test tsignaling service reconnection")
+    @Test("CCT5 Test signaling service reconnection")
     func client_connectivity_test5() async throws {
         let service = try await ClientTestInstance.create()
         let client = await service.createSignalingClient()
