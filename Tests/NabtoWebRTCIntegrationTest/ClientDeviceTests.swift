@@ -14,34 +14,34 @@ struct ClientDeviceTests {
 
     @Test("CDT1 Test device disconnected")
     func client_device_test1() async throws {
-        let client = service.createSignalingClient()
-        try client.start()
-        try await service.expectChannelStates([.offline])
+        let client = await service.createSignalingClient()
+        try await client.start()
+        try await service.expectChannelStates([.disconnected])
     }
 
     @Test("CDT2 Test device connected")
     func client_device_test2() async throws {
-        let client = service.createSignalingClient()
+        let client = await service.createSignalingClient()
         try await service.connectDevice()
-        try client.start()
-        try await service.expectChannelStates([.online])
+        try await client.start()
+        try await service.expectChannelStates([.connected])
     }
 
     @Test("CDT3 Test device connecting while client is connected")
     func client_device_test3() async throws {
-        let client = service.createSignalingClient()
-        try client.start()
-        try await service.expectChannelStates([.offline])
+        let client = await service.createSignalingClient()
+        try await client.start()
+        try await service.expectChannelStates([.disconnected])
         try await service.expectConnectionStates([.connecting, .connected])
         try await service.connectDevice()
-        try await service.expectChannelStates([.online])
+        try await service.expectChannelStates([.connected])
     }
 
     @Test("CDT4 Test requireOnline bit")
     func client_device_test4() async throws {
-        let client = service.createSignalingClient(requireOnline: true)
-        try client.start()
-        try await service.expectChannelStates([.offline])
+        let client = await service.createSignalingClient(requireOnline: true)
+        try await client.start()
+        try await service.expectChannelStates([.disconnected])
         let error = try await service.expectSomeError()
         #expect(error is SignalingClientError)
     }
