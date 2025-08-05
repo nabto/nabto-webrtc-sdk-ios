@@ -67,17 +67,7 @@ public protocol SignalingClientObserver: AnyObject {
  * SignalingClient represents the clientside signaling connection
  * through the Nabto WebRTC signaling service.
  */
-public protocol SignalingClient {
-    /**
-     * The current connection state of the client.
-     */
-    var connectionState: SignalingConnectionState { get }
-
-    /**
-     * The current channel state of the client.
-     */
-    var channelState: SignalingChannelState { get }
-
+public protocol SignalingClient: Actor {
     /**
      * Attempt to make an anonymous connection to the signaling service.
      */

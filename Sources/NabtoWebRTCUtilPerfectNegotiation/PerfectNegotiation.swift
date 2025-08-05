@@ -39,7 +39,6 @@ public class PerfectNegotiation {
     }
 
     public func onMessage(_ message: WebrtcSignalingMessage) {
-        print("**PERFECTNEGOTIATION** \(message)\n")
         eventContinuation.yield(.message(message))
     }
     

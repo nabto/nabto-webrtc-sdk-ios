@@ -1,7 +1,7 @@
 import Foundation
 import NabtoWebRTC
 
-class ClientMessageTransportImpl: MessageTransport {
+actor ClientMessageTransportImpl: MessageTransport {
     struct Observation {
         weak var observer: MessageTransportObserver?
     }
@@ -26,12 +26,12 @@ class ClientMessageTransportImpl: MessageTransport {
     }
 
     public func start() async throws {
-        client.addObserver(self)
+        await client.addObserver(self)
         try await sendSignalingMessage(SignalingSetupRequest())
     }
 
-    public func close() {
-        client.removeObserver(self)
+    public func close() async {
+        await client.removeObserver(self)
     }
 
     public func addObserver(_ observer: any MessageTransportObserver) {

@@ -102,20 +102,17 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: SocketEvent.self)
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol prtcl: String?) {
-        print("didOpenWithProtocol: prtcl")
         isConnected = true
         eventContinuation.yield(.didOpenWithProtocol(protocol: prtcl))
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        print("didCloseWith: /(reason)")
         isConnected = false
         eventContinuation.yield(.didCloseWith(closeCode: closeCode, reason: reason))
         eventContinuation.finish()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
-        print("didCompleteWithError: /(error)")
         if error != nil {
             eventContinuation.yield(.didCompleteWithError(error: error))
             eventContinuation.finish()
@@ -164,13 +161,6 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
                 Log.webSocket.error("Failed to handle incoming websocket message: \(error)")
             }
         }
-        
-        /*
-        // @TODO: This is terrible
-        while !isConnected {
-            await Task.yield()
-        }
-        */
     }
 
     func close() {
@@ -226,7 +216,6 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
             let jsonDecoder = JSONDecoder()
             let routingMessage = try jsonDecoder.decode(RoutingMessage.self, from: msg.data(using: .utf8)!)
 
-            print("**INCOMING** \(routingMessage.type) \(routingMessage.message)\n")
             switch routingMessage.type {
                 case .message:
                     await observer?.socket(self, didGetMessage: routingMessage.channelId!, message: routingMessage.message!, authorized: routingMessage.authorized ?? false)
@@ -248,7 +237,6 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     }
 
     private func send(_ msg: RoutingMessage) {
-        print("**SENDING** \(msg.type) \(msg.message)\n")
         if (!isConnected) {
             return
         }

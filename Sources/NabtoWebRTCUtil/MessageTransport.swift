@@ -39,7 +39,7 @@ public protocol MessageTransportObserver: AnyObject {
  * PeerConnection should be created in this callback and it should be created
  * with the RTC ICE Servers provided in the callback.
  */
-public protocol MessageTransport {
+public protocol MessageTransport: Actor {
     /**
      * Send a message through the MessageTransport and the signaling channel to the other peer.
      *

@@ -63,7 +63,7 @@ class ViewController: UIViewController {
                     client: signalingClient!,
                     options: .sharedSecret(sharedSecret: sharedSecret)
                 )
-                messageTransport?.addObserver(self)
+                await messageTransport?.addObserver(self)
             } catch {
                 print(error)
             }

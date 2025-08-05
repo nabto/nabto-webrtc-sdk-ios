@@ -2,13 +2,13 @@ import Dispatch
 
 let CHECK_ALIVE_TIMEOUT = 1000.0
 
-class SignalingClientImpl: SignalingClient, ReliabilityHandler {
+actor SignalingClientImpl: SignalingClient, ReliabilityHandler {
     struct Observation {
         weak var observer: SignalingClientObserver?
     }
 
-    var connectionState: SignalingConnectionState = .new
-    var channelState: SignalingChannelState = .new
+    private var connectionState: SignalingConnectionState = .new
+    private var channelState: SignalingChannelState = .new
 
     private var observations = [ObjectIdentifier: Observation]()
     private var closed = false
