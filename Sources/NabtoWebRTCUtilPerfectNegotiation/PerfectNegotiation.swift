@@ -8,6 +8,12 @@ fileprivate enum PerfectNegotiationEvent {
     case message(_ message: WebrtcSignalingMessage)
 }
 
+/**
+ * This class implements the <a
+ * href="https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation">Perfect
+ * Negotiation</a> pattern. This implements perfect negotiation for this <a
+ * href="https://github.com/stasel/WebRTC">WebRTC library</a>.
+ */
 public class PerfectNegotiation {
     private let peerConnection: RTCPeerConnection
     private let messageTransport: MessageTransport
@@ -18,6 +24,12 @@ public class PerfectNegotiation {
 
     private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: PerfectNegotiationEvent.self)
 
+    /**
+     * Initialize a perfect negotiator for an RTCPeerConnection.
+     *
+     * @param peerConnection The PeerConnection to negotiate.
+     * @param messageTransport The MessageTransport to use for sending/receiving signaling messages.
+     */
     public init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
         self.peerConnection = peerConnection
         self.messageTransport = messageTransport
