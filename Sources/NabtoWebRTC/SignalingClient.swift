@@ -18,8 +18,8 @@ public enum SignalingConnectionState: String {
  */
 public enum SignalingChannelState : String {
     case new = "NEW"
-    case online = "ONLINE"
-    case offline = "OFFLINE"
+    case connected = "CONNECTED"
+    case disconnected = "DISCONNECTED"
     case failed = "FAILED"
     case closed = "CLOSED"
 }
@@ -33,82 +33,71 @@ public protocol SignalingClientObserver: AnyObject {
      * @param client The SignalingClient whose state has changed
      * @param connectionState The new state that the SignalingClient is in
      */
-    func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState)
+    func signalingClient(_ client: SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState) async
 
     /**
      * SignalingClient received a message from the camera
      * @param client The SignalingClient that received the message
      * @param message The received message
      */
-    func signalingClient(_ client: SignalingClient, didGetMessage message: JSONValue)
+    func signalingClient(_ client: SignalingClient, didGetMessage message: JSONValue) async
 
     /**
      * SignalingClient channel state changed
      * @param client The SignalingClient whose state changed
      * @param channelState The new SignalingChannelState
      */
-    func signalingClient(_ client: SignalingClient, didChannelStateChange channelState: SignalingChannelState)
+    func signalingClient(_ client: SignalingClient, didChannelStateChange channelState: SignalingChannelState) async
 
     /**
      * SignalingClient got an error
      * @param client The SignalingClient that the error occurred on
      * @param error The error that occurred
      */
-    func signalingClient(_ client: SignalingClient, didError error: Error)
+    func signalingClient(_ client: SignalingClient, didError error: Error) async
 
     /**
      * SignalingClient reconnected
      * @param client The SignalingClient that reconnected
      */
-    func signalingClientDidSignalingReconnect(_ client: SignalingClient)
+    func signalingClientDidConnectionReconnect(_ client: SignalingClient) async
 }
 
 /**
  * SignalingClient represents the clientside signaling connection
  * through the Nabto WebRTC signaling service.
  */
-public protocol SignalingClient {
+public protocol SignalingClient: Actor {
     /**
-     * The current connection state of the client.
+     * Attempt to make an anonymous connection to the signaling service.
      */
-    var connectionState: SignalingConnectionState { get }
-
-    /**
-     * The current channel state of the client.
-     */
-    var channelState: SignalingChannelState { get }
-
-    /**
-     * Asynchronously attempt to make an anonymous connection to the signaling service.
-     */
-    func start() throws
+    func start() async throws
 
     /**
      * Close the signaling client.
      * This will send a CHANNEL_CLOSED message to the peer before closing the underlying websocket connection.
      */
-    func close()
+    func close() async
 
     /**
      * Send a message across to the peer
      * @param msg The message to send
      */
-    func sendMessage(_ msg: JSONValue)
+    func sendMessage(_ msg: JSONValue) async
 
     /**
      * Send an error across to the peer
-     * @param errorCode The error code to send
-     * öparam errorMessage An optional message to explain the error
+     * @param error The SignalingError to send
      */
-    func sendError(errorCode: String, errorMessage: String)
+    func sendError(_ error: SignalingError) async
 
     /**
      * Trigger a ping to the backend to test that the connection is alive.
      *
      * If the connection is dead it will be reconnected.
-     * Any result is reported to the observers on their didSignalingError and didSignalingReconnect functions.
+     * Any result is reported to the observers on their didSignalingError and didConnectionReconnect functions.
      */
-     func checkAlive()
+    func checkAlive() async
 
     /**
      * Add an observer to this signaling client.

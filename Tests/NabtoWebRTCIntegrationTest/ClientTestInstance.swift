@@ -93,7 +93,7 @@ class ClientTestInstance {
         self.accessToken = accessToken ?? ""
     }
 
-    func createSignalingClient(requireOnline: Bool? = nil, accessToken: String? = nil) -> SignalingClient {
+    func createSignalingClient(requireOnline: Bool? = nil, accessToken: String? = nil) async -> SignalingClient {
         let signalingClient = NabtoWebRTC.createSignalingClient(SignalingClientOptions(
             productId: productId,
             deviceId: deviceId,
@@ -102,7 +102,7 @@ class ClientTestInstance {
             accessToken: accessToken
         ))
 
-        signalingClient.addObserver(self)
+        await signalingClient.addObserver(self)
         return signalingClient
     }
 
@@ -293,20 +293,21 @@ class ClientTestInstance {
 }
 
 extension ClientTestInstance: SignalingClientObserver {
-    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didConnectionStateChange connectionState: NabtoWebRTC.SignalingConnectionState) {
+    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didConnectionStateChange connectionState: NabtoWebRTC.SignalingConnectionState) async {
         connectionStateContinuation.yield(connectionState)
     }
-    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didChannelStateChange channelState: NabtoWebRTC.SignalingChannelState) {
+
+    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didChannelStateChange channelState: NabtoWebRTC.SignalingChannelState) async {
         channelStateContinuation.yield(channelState)
     }
 
-    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didGetMessage message: NabtoWebRTC.JSONValue) {
+    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didGetMessage message: NabtoWebRTC.JSONValue) async {
         messageContinuation.yield(message)
     }
 
-    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didError error: any Error) {
+    func signalingClient(_ client: any NabtoWebRTC.SignalingClient, didError error: any Error) async {
         errorContinuation.yield(error)
     }
 
-    func signalingClientDidSignalingReconnect(_ client: any NabtoWebRTC.SignalingClient) {}
+    func signalingClientDidConnectionReconnect(_ client: any NabtoWebRTC.SignalingClient) async {}
 }

@@ -9,6 +9,8 @@ public enum SignalingErrorCode {
     case channelClosed
     case channelNotFound
     case noMoreChannels
+    case accessDenied
+    case internalError
     case unknown(String)
 
     public var stringValue: String {
@@ -18,6 +20,8 @@ public enum SignalingErrorCode {
             case .channelClosed: return "CHANNEL_CLOSED"
             case .channelNotFound: return "CHANNEL_NOT_FOUND"
             case .noMoreChannels: return "NO_MORE_CHANNELS"
+            case .accessDenied: return "ACCESS_DENIED"
+            case .internalError: return "INTERNAL_ERROR"
             case .unknown(let code): return code
         }
     }
@@ -29,6 +33,8 @@ public enum SignalingErrorCode {
             case "CHANNEL_CLOSED": .channelClosed
             case "CHANNEL_NOT_FOUND": .channelNotFound
             case "NO_MORE_CHANNELS": .noMoreChannels
+            case "ACCESS_DENIED": .accessDenied
+            case "INTERNAL_ERROR": .internalError
             default: .unknown(str)
         }
     }
@@ -40,12 +46,10 @@ public enum SignalingErrorCode {
 public struct SignalingError: LocalizedError {
     private(set) var errorCode: SignalingErrorCode
     private(set) var errorMessage: String
-    private(set) var isRemote: Bool
     public var errorDescription: String? { return self.errorMessage }
     
-    public init(errorCode: SignalingErrorCode, errorMessage: String, isRemote: Bool = false) {
+    public init(errorCode: SignalingErrorCode, errorMessage: String) {
         self.errorCode = errorCode
         self.errorMessage = errorMessage
-        self.isRemote = isRemote
     }
 }

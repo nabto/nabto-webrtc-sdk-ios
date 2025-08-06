@@ -7,12 +7,13 @@
 
 import NabtoWebRTC
 import NabtoWebRTCUtil
+import NabtoWebRTCUtilPerfectNegotiation
 import UIKit
 import WebRTC
 
-let productId = "wp-z3nyma7y"
-let deviceId = "wd-wbnx9pat7xifmbuh"
-let sharedSecret = "MySecret"
+let productId = "wp-39wu7tex"
+let deviceId = "wd-3xtqp3hy4xxy3av3"
+let sharedSecret = "59470b3f8e331d9975da366d8dc0dcf743ef6a1154a4f779932740b4d14be3ab"
 
 class ViewController: UIViewController {
     // WebRTC
@@ -47,22 +48,25 @@ class ViewController: UIViewController {
 
         initPeerConnectionFactory()
 
-        signalingClient = createSignalingClient(
-            SignalingClientOptions(
-                productId: productId,
-                deviceId: deviceId
+        Task {
+            signalingClient = createSignalingClient(
+                SignalingClientOptions(
+                    productId: productId,
+                    deviceId: deviceId
+                )
             )
-        )
 
-        do {
-            messageTransport = try createClientMessageTransport(
-                client: signalingClient!,
-                options: .sharedSecret(sharedSecret: sharedSecret)
-            )
-            messageTransport?.addObserver(self)
-            try signalingClient?.start()
-        } catch {
-            print(error)
+            do {
+                try await signalingClient?.start()
+                
+                messageTransport = try await createClientMessageTransport(
+                    client: signalingClient!,
+                    options: .sharedSecret(sharedSecret: sharedSecret)
+                )
+                await messageTransport?.addObserver(self)
+            } catch {
+                print(error)
+            }
         }
     }
 
@@ -106,15 +110,15 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: MessageTransportObserver {
-    func messageTransport(_ transport: any MessageTransport, didGet message: WebrtcSignalingMessage) {
+    func messageTransport(_ transport: any MessageTransport, didGet message: WebrtcSignalingMessage) async {
         perfectNegotiation.onMessage(message)
     }
 
-    func messageTransport(_ transport: any MessageTransport, didError error: any Error) {
+    func messageTransport(_ transport: any MessageTransport, didError error: any Error) async {
         print("MessageTransport error: \(error)")
     }
 
-    func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) {
+    func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async {
         setupPeerConnection(iceServers)
     }
 }

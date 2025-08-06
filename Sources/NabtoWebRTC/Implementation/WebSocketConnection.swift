@@ -1,12 +1,12 @@
 import Foundation
 
 protocol WebSocketObserver: AnyObject {
-    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool)
-    func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String)
-    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String)
-    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String)
-    func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String)
-    func socketDidOpen(_ ws: WebSocketConnection)
+    func socket(_ ws: WebSocketConnection, didGetMessage channelId: String, message: ReliabilityData, authorized: Bool) async
+    func socket(_ ws: WebSocketConnection, didPeerConnect channelId: String) async
+    func socket(_ ws: WebSocketConnection, didPeerDisconnect channelId: String) async
+    func socket(_ ws: WebSocketConnection, didConnectionError channelId: String, errorCode: String, errorMessage: String) async
+    func socket(_ ws: WebSocketConnection, didCloseOrError channelId: String) async
+    func socketDidOpen(_ ws: WebSocketConnection) async
 }
 
 struct RoutingMessageError: Codable {
@@ -31,34 +31,149 @@ struct RoutingMessage: Codable {
     var error: RoutingMessageError?
 }
 
+fileprivate enum SocketEvent {
+    case didOpenWithProtocol(protocol: String?)
+    case didCloseWith(closeCode: URLSessionWebSocketTask.CloseCode?, reason: Data?)
+    case didCompleteWithError(error: (any Error)?)
+}
+
+fileprivate typealias WebSocketStream = AsyncThrowingStream<URLSessionWebSocketTask.Message, Error>
+
+fileprivate class SocketStream: AsyncSequence {
+    typealias AsyncIterator = WebSocketStream.Iterator
+    typealias Element = URLSessionWebSocketTask.Message
+
+    private var continuation: WebSocketStream.Continuation?
+    private let task: URLSessionWebSocketTask
+
+    private lazy var stream: WebSocketStream = {
+        return WebSocketStream { continuation in
+            self.continuation = continuation
+            waitForNextValue()
+        }
+    }()
+
+    private func waitForNextValue() {
+        guard task.closeCode == .invalid else {
+            continuation?.finish()
+            return
+        }
+
+        task.receive(completionHandler: { [weak self] result in
+            guard let continuation = self?.continuation else {
+                return
+            }
+
+            do {
+                let message = try result.get()
+                continuation.yield(message)
+                self?.waitForNextValue()
+            } catch {
+                continuation.finish(throwing: error)
+            }
+        })
+    }
+
+    init(task: URLSessionWebSocketTask) {
+        self.task = task
+        task.resume()
+    }
+
+    deinit {
+        continuation?.finish()
+    }
+
+    func makeAsyncIterator() -> AsyncIterator {
+        return stream.makeAsyncIterator()
+    }
+
+    func cancel() async throws {
+        task.cancel(with: .goingAway, reason: nil)
+        continuation?.finish()
+    }
+}
+
 class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDelegate {
     weak var observer: WebSocketObserver?
     private var socket: URLSessionWebSocketTask? = nil
     private var isConnected = false
     private var pongCounter = 0
 
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+    private typealias EventStream = AsyncStream<SocketEvent>
+    private var socketStream: SocketStream?
+    private var eventStream: EventStream?
+    private var eventContinuation: EventStream.Continuation?
+
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol prtcl: String?) {
         isConnected = true
-        self.observer?.socketDidOpen(self)
+        eventContinuation?.yield(.didOpenWithProtocol(protocol: prtcl))
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         isConnected = false
-        self.observer?.socket(self, didCloseOrError: "closed")
+        eventContinuation?.yield(.didCloseWith(closeCode: closeCode, reason: reason))
+        eventContinuation?.finish()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         if error != nil {
-            self.observer?.socket(self, didCloseOrError: "error")
+            eventContinuation?.yield(.didCompleteWithError(error: error))
+            eventContinuation?.finish()
         }
     }
 
-    func connect(_ endpoint: String, observer: WebSocketObserver) {
+    func connect(_ endpoint: String, observer: WebSocketObserver) async {
         self.observer = observer
+        self.eventContinuation?.finish()
+
+        let (stream, cont) = AsyncStream.makeStream(of: SocketEvent.self)
+        self.eventStream = stream
+        self.eventContinuation = cont
+
         let urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
         socket = urlSession.webSocketTask(with: URL(string: endpoint)!)
-        socket?.resume()
-        Task { await receiveMessage() }
+        Task {
+            guard let eventStream = eventStream else {
+                return
+            }
+
+            for await event in eventStream {
+                switch event {
+                    case .didCloseWith(_, _):
+                        // @TODO: Return more data than just "closed"?
+                        await self.observer?.socket(self, didCloseOrError: "closed")
+                    case .didCompleteWithError(_):
+                        // @TODO: Return more data than just "error"?
+                        await self.observer?.socket(self, didCloseOrError: "error")
+                    case .didOpenWithProtocol(_):
+                        await self.observer?.socketDidOpen(self)
+                }
+            }
+        }
+
+        self.socketStream = SocketStream(task: socket!)
+        Task {
+            guard let stream = self.socketStream else {
+                return
+            }
+
+            do {
+                for try await message in stream {
+                    switch message {
+                        case let .string(string):
+                            await handleIncomingMessage(string)
+                        case let .data(data):
+                            if let string = String(data: data, encoding: .utf8) {
+                                await handleIncomingMessage(string)
+                            }
+                        @unknown default:
+                            Log.webSocket.debug("Unknown message received!")
+                    }
+                }
+            } catch {
+                Log.webSocket.error("Failed to handle incoming websocket message: \(error)")
+            }
+        }
     }
 
     func close() {
@@ -74,11 +189,11 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         send(routingMessage)
     }
 
-    func sendError(_ channelId: String, _ errorCode: String, _ errorMessage: String = "") {
+    func sendError(_ channelId: String, _ error: SignalingError) {
         let routingMessage = RoutingMessage(
             type: .message,
             channelId: channelId,
-            error: RoutingMessageError(code: errorCode, message: errorMessage)
+            error: RoutingMessageError(code: error.errorCode.stringValue, message: error.errorMessage)
         )
         send(routingMessage)
     }
@@ -93,56 +208,36 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         send(routingMessage)
     }
 
-    func checkAlive(timeout: Double) {
+    func checkAlive(timeout: Double) async {
         let currentPongCounter = self.pongCounter
-        let timeoutSeconds = timeout / 1000
         sendPing()
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeoutSeconds) {
-            if currentPongCounter == self.pongCounter {
-                self.observer?.socket(self, didCloseOrError: "timeout")
-            }
-        }
-    }
-
-    private func receiveMessage() async {
-        var isActive = true
-        while isActive && socket?.closeCode == .invalid {
+        Task {
+            let timeoutNanos = UInt64(timeout * 1000000)
             do {
-                let maybeMessage = try await socket?.receive()
-
-                if let message = maybeMessage {
-                    switch message {
-                        case let .string(string):
-                            handleIncomingMessage(string)
-                        case let .data(data):
-                            if let string = String(data: data, encoding: .utf8) {
-                                handleIncomingMessage(string)
-                            }
-                        @unknown default:
-                            Log.webSocket.debug("Unknown message received!")
-                    }
+                try await Task.sleep(nanoseconds: timeoutNanos)
+                if currentPongCounter == self.pongCounter {
+                    await self.observer?.socket(self, didCloseOrError: "timeout")
                 }
             } catch {
-                Log.webSocket.error("Failed to handle incoming websocket message: \(error)")
-                isActive = false
+                Log.webSocket.warning("CheckAlive : \(error)")
             }
         }
     }
 
-    private func handleIncomingMessage(_ msg: String) {
+    private func handleIncomingMessage(_ msg: String) async {
         do {
             let jsonDecoder = JSONDecoder()
             let routingMessage = try jsonDecoder.decode(RoutingMessage.self, from: msg.data(using: .utf8)!)
 
             switch routingMessage.type {
                 case .message:
-                    observer?.socket(self, didGetMessage: routingMessage.channelId!, message: routingMessage.message!, authorized: routingMessage.authorized ?? false)
+                    await observer?.socket(self, didGetMessage: routingMessage.channelId!, message: routingMessage.message!, authorized: routingMessage.authorized ?? false)
                 case .error:
-                    observer?.socket(self, didConnectionError: routingMessage.channelId!, errorCode: routingMessage.error!.code, errorMessage: routingMessage.error!.message ?? "Missing detailed error information")
+                    await observer?.socket(self, didConnectionError: routingMessage.channelId!, errorCode: routingMessage.error!.code, errorMessage: routingMessage.error!.message ?? "Missing detailed error information")
                 case .peerConnected:
-                    observer?.socket(self, didPeerConnect: routingMessage.channelId!)
+                    await observer?.socket(self, didPeerConnect: routingMessage.channelId!)
                 case .peerOffline:
-                    observer?.socket(self, didPeerDisconnect: routingMessage.channelId!)
+                    await observer?.socket(self, didPeerDisconnect: routingMessage.channelId!)
                 case .ping:
                     sendPong()
                 case .pong:

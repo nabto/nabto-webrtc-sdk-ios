@@ -13,13 +13,18 @@ let package = Package(
             targets: ["NabtoWebRTC"]),
         .library(
             name: "NabtoWebRTCUtil",
-            targets: ["NabtoWebRTCUtil"])
+            targets: ["NabtoWebRTCUtil"]),
+        .library(
+            name: "NabtoWebRTCUtilPerfectNegotiation",
+            targets: ["NabtoWebRTCUtilPerfectNegotiation"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0"),
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.7.0"),
-        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0")
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
+        .package(url: "https://github.com/stasel/WebRTC.git", from: "138.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -34,6 +39,13 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftJWT", package: "Swift-JWT"),
                 .byName(name: "NabtoWebRTC")
+            ]),
+        .target(
+            name: "NabtoWebRTCUtilPerfectNegotiation",
+            dependencies: [
+                .byName(name: "NabtoWebRTC"),
+                .byName(name: "NabtoWebRTCUtil"),
+                .product(name: "WebRTC", package: "WebRTC"),
             ]),
         .testTarget(
             name: "NabtoWebRTCTests",

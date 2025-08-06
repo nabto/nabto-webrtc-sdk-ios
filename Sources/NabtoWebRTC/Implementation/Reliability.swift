@@ -12,10 +12,10 @@ struct ReliabilityData: Codable {
 }
 
 protocol ReliabilityHandler: AnyObject {
-    func sendRoutingMessage(_ msg: ReliabilityData)
+    func sendRoutingMessage(_ msg: ReliabilityData) async
 }
 
-class Reliability {
+actor Reliability {
     private var unackedMessages: [ReliabilityData] = []
     private var recvSeq = 0
     private var sendSeq = 0
@@ -25,7 +25,7 @@ class Reliability {
         self.handler = handler
     }
 
-    func sendReliableMessage(_ data: JSONValue) {
+    func sendReliableMessage(_ data: JSONValue) async {
         let encoded = ReliabilityData(
             type: .data,
             seq: sendSeq,
@@ -33,30 +33,30 @@ class Reliability {
         )
         sendSeq += 1
         unackedMessages.append(encoded)
-        handler?.sendRoutingMessage(encoded)
+        await handler?.sendRoutingMessage(encoded)
     }
 
-    func handlePeerConnected() {
-        sendUnackedMessages()
+    func handlePeerConnected() async {
+        await sendUnackedMessages()
     }
 
-    func handleConnect() {
-        sendUnackedMessages()
+    func handleConnect() async {
+        await sendUnackedMessages()
     }
 
-    func handleRoutingMessage(_ message: ReliabilityData) -> JSONValue? {
+    func handleRoutingMessage(_ message: ReliabilityData) async -> JSONValue? {
         if message.type == .ack {
             handleAck(message)
             return nil
         } else {
-            return handleReliabilityMessage(message)
+            return await handleReliabilityMessage(message)
         }
     }
 
-    private func handleReliabilityMessage(_ message: ReliabilityData) -> JSONValue? {
+    private func handleReliabilityMessage(_ message: ReliabilityData) async -> JSONValue? {
         if message.seq <= recvSeq {
             // Message was expected or retransmitted
-            sendAck(message.seq)
+            await sendAck(message.seq)
         }
 
         if message.seq != recvSeq {
@@ -81,14 +81,14 @@ class Reliability {
         }
     }
 
-    private func sendUnackedMessages() {
+    private func sendUnackedMessages() async {
         for msg in unackedMessages {
-            handler?.sendRoutingMessage(msg)
+            await handler?.sendRoutingMessage(msg)
         }
     }
 
-    private func sendAck(_ seq: Int) {
+    private func sendAck(_ seq: Int) async {
         let ack = ReliabilityData(type: .ack, seq: seq, data: nil)
-        handler?.sendRoutingMessage(ack)
+        await handler?.sendRoutingMessage(ack)
     }
 }

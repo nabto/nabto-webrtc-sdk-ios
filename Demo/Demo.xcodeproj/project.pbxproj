@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7808E3322DC845190082C0EC /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 7808E3312DC845190082C0EC /* WebRTC */; };
+		786E31A12E39357800085500 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 786E31A02E39357800085500 /* NabtoWebRTC */; };
+		786E31A32E39357800085500 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 786E31A22E39357800085500 /* NabtoWebRTCUtil */; };
+		788FAD632E39381800C509B2 /* NabtoWebRTCUtilPerfectNegotiation in Frameworks */ = {isa = PBXBuildFile; productRef = 788FAD622E39381800C509B2 /* NabtoWebRTCUtilPerfectNegotiation */; };
+		78F692242E3936A8006419D1 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 78F692232E3936A8006419D1 /* NabtoWebRTC */; };
+		78F692262E3936A8006419D1 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 78F692252E3936A8006419D1 /* NabtoWebRTCUtil */; };
 		D4ED23E62DD749EF00087BD8 /* NabtoWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */; };
 		D4ED23E82DD749EF00087BD8 /* NabtoWebRTCUtil in Frameworks */ = {isa = PBXBuildFile; productRef = D4ED23E72DD749EF00087BD8 /* NabtoWebRTCUtil */; };
 /* End PBXBuildFile section */
@@ -42,9 +46,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				78F692262E3936A8006419D1 /* NabtoWebRTCUtil in Frameworks */,
+				786E31A32E39357800085500 /* NabtoWebRTCUtil in Frameworks */,
+				78F692242E3936A8006419D1 /* NabtoWebRTC in Frameworks */,
 				D4ED23E82DD749EF00087BD8 /* NabtoWebRTCUtil in Frameworks */,
+				786E31A12E39357800085500 /* NabtoWebRTC in Frameworks */,
 				D4ED23E62DD749EF00087BD8 /* NabtoWebRTC in Frameworks */,
-				7808E3322DC845190082C0EC /* WebRTC in Frameworks */,
+				788FAD632E39381800C509B2 /* NabtoWebRTCUtilPerfectNegotiation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -95,9 +103,13 @@
 			);
 			name = Demo;
 			packageProductDependencies = (
-				7808E3312DC845190082C0EC /* WebRTC */,
 				D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */,
 				D4ED23E72DD749EF00087BD8 /* NabtoWebRTCUtil */,
+				786E31A02E39357800085500 /* NabtoWebRTC */,
+				786E31A22E39357800085500 /* NabtoWebRTCUtil */,
+				78F692232E3936A8006419D1 /* NabtoWebRTC */,
+				78F692252E3936A8006419D1 /* NabtoWebRTCUtil */,
+				788FAD622E39381800C509B2 /* NabtoWebRTCUtilPerfectNegotiation */,
 			);
 			productName = Demo;
 			productReference = 7808E3022DC843B80082C0EC /* Demo.app */;
@@ -128,8 +140,7 @@
 			mainGroup = 7808E2F92DC843B80082C0EC;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */,
-				D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference ".." */,
+				78F692222E3936A8006419D1 /* XCLocalSwiftPackageReference ".." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7808E3032DC843B80082C0EC /* Products */;
@@ -361,28 +372,33 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		D4ED23E42DD749EF00087BD8 /* XCLocalSwiftPackageReference ".." */ = {
+		78F692222E3936A8006419D1 /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ..;
+			relativePath = "..";
 		};
 /* End XCLocalSwiftPackageReference section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stasel/WebRTC.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 135.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		7808E3312DC845190082C0EC /* WebRTC */ = {
+		786E31A02E39357800085500 /* NabtoWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7808E3302DC845190082C0EC /* XCRemoteSwiftPackageReference "WebRTC" */;
-			productName = WebRTC;
+			productName = NabtoWebRTC;
+		};
+		786E31A22E39357800085500 /* NabtoWebRTCUtil */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NabtoWebRTCUtil;
+		};
+		788FAD622E39381800C509B2 /* NabtoWebRTCUtilPerfectNegotiation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 78F692222E3936A8006419D1 /* XCLocalSwiftPackageReference ".." */;
+			productName = NabtoWebRTCUtilPerfectNegotiation;
+		};
+		78F692232E3936A8006419D1 /* NabtoWebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NabtoWebRTC;
+		};
+		78F692252E3936A8006419D1 /* NabtoWebRTCUtil */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NabtoWebRTCUtil;
 		};
 		D4ED23E52DD749EF00087BD8 /* NabtoWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
