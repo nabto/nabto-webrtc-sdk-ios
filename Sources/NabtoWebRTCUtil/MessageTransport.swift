@@ -8,6 +8,7 @@ public protocol MessageTransportObserver: AnyObject {
     /**
      * Callback invoked when a message is received from the Camera.
      *
+     * @param transport The MessageTransport that received the message
      * @param message The received message.
      */
     func messageTransport(_ transport: MessageTransport, didGet message: WebrtcSignalingMessage) async
@@ -15,6 +16,7 @@ public protocol MessageTransportObserver: AnyObject {
     /**
      * Callback invoked if an error occurs in the MessageTransport.
      *
+     * @param transport The MessageTransport that emitted the error
      * @param error The error that occurred.
      */
     func messageTransport(_ transport: MessageTransport, didError error: Error) async
@@ -22,6 +24,7 @@ public protocol MessageTransportObserver: AnyObject {
     /**
      * Callback invoked when the setup phase of the MessageTransport is concluded.
      *
+     * @param transport The MessageTransport that finished its setup phase.
      * @param iceServers A list of ICE servers to use in Peer Connection.
      */
     func messageTransport(_ transport: MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async
@@ -74,6 +77,9 @@ public enum ClientMessageTransportOptions {
 
     /**
      * Using sharedSecret will result in the MessageTransport using shared secret message signing.
+     *
+     * @param sharedSecret The shared secret to use
+     * @param keyID Optional key ID for the secret.
      */
     case sharedSecret(sharedSecret: String, keyId: String? = nil)
 }
