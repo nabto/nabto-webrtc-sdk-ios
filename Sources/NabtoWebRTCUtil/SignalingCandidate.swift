@@ -1,9 +1,12 @@
 import NabtoWebRTC
 
 /**
- * SignalingMessage class representing an ICE candidate sent through the message transport.
+ * SignalingMessage struct representing an ICE candidate sent through the message transport.
  */
 public struct SignalingCandidate: Codable, SignalingMessage {
+    /**
+     * Candidate information struct definition
+     */
     public struct Candidate: Codable {
         /**
          * The string representation of the candidate
