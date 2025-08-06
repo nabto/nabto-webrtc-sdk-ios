@@ -12,17 +12,16 @@ public class PerfectNegotiation {
     private let peerConnection: RTCPeerConnection
     private let messageTransport: MessageTransport
 
-    private var remoteTrack: RTCVideoTrack! = nil
     private var polite = false
     private var makingOffer = false
     private var ignoreOffer = false
-    
+
     private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: PerfectNegotiationEvent.self)
 
     public init(peerConnection: RTCPeerConnection, messageTransport: MessageTransport) {
         self.peerConnection = peerConnection
         self.messageTransport = messageTransport
-        
+
         Task {
             for await event in eventStream {
                 await handleEvent(event)
@@ -41,7 +40,7 @@ public class PerfectNegotiation {
     public func onMessage(_ message: WebrtcSignalingMessage) {
         eventContinuation.yield(.message(message))
     }
-    
+
     private func handleEvent(_ event: PerfectNegotiationEvent) async {
         switch event {
         case .negotiationNeeded:
@@ -53,10 +52,10 @@ public class PerfectNegotiation {
                 // @TODO: Better logging
                 print(error)
             }
-            
+
         case .iceCandidate(let candidate):
             await sendIceCandidate(candidate)
-            
+
         case .message(let message):
             do {
                 if let description = message.description?.description {
