@@ -16,6 +16,11 @@ public class SignalingEventHandler {
 
         client.addObserver(self)
     }
+
+    deinit {
+        client?.removeObserver(self)
+    }
+    
     
     func handlePeerConnectionStateChange() {
         guard let peerConnection = peerConnection else {
@@ -31,10 +36,6 @@ public class SignalingEventHandler {
         }
     }
 
-    func close() {
-        client?.removeObserver(self)
-    }
-    
     private func handleSignalingConnectionReconnect() {
         peerConnection?.restartIce()
     }
