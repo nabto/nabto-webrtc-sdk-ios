@@ -6,6 +6,11 @@ struct ClientConnectResponse: Codable {
     var channelId: String
 }
 
+struct BackendErrorResponse: Codable {
+    var message: String
+    var code: String?
+}
+
 class Backend {
     struct RequestBody: Codable {
         var productId: String
@@ -40,14 +45,29 @@ class Backend {
 
         let (responseData, res) = try await URLSession.shared.data(for: request)
         guard let response = res as? HTTPURLResponse else {
-            throw SignalingClientError.connectError("Failed to complete HTTP client connect")
+            throw HttpError.unknown(statusCode: -1, message: "Failed to correctly read HTTP response")
         }
-
-        if response.statusCode != 200 {
-            throw SignalingClientError.connectError("Failed to complete HTTP client connect, status code: \(response.statusCode)")
+        
+        if response.statusCode >= 200 && response.statusCode < 300 {
+            guard let clientConnectResponse = try? decoder.decode(ClientConnectResponse.self, from: responseData) else {
+                throw HttpError.unknown(statusCode: response.statusCode, message: "OK response but failed to parse response body")
+            }
+            
+            return clientConnectResponse
+        } else {
+            guard let backendError = try? decoder.decode(BackendErrorResponse.self, from: responseData) else {
+                throw HttpError.unknown(statusCode: response.statusCode, message: "Failed to parse error response body")
+            }
+            
+            if backendError.code == "PRODUCT_ID_NOT_FOUND" {
+                throw HttpError.poductIdNotFound(statusCode: response.statusCode, message: backendError.message)
+            }
+            
+            if backendError.code == "DEVICE_ID_NOT_FOUND" {
+                throw HttpError.deviceIdNotFound(statusCode: response.statusCode, message: backendError.message)
+            }
+            
+            throw HttpError.unknown(statusCode: response.statusCode, message: backendError.message)
         }
-
-        let clientConnectResponse = try decoder.decode(ClientConnectResponse.self, from: responseData)
-        return clientConnectResponse
     }
 }
