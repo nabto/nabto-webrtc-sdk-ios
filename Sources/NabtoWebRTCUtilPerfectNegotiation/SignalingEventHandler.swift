@@ -10,12 +10,12 @@ public class SignalingEventHandler {
     weak var peerConnection: RTCPeerConnection?
     weak var client: SignalingClient?
     
-    init(peerConnection: RTCPeerConnection, client: SignalingClient) {
+    public init(peerConnection: RTCPeerConnection, client: SignalingClient) {
         self.peerConnection = peerConnection
         self.client = client
     }
     
-    func handlePeerConnectionStateChange() async {
+    public func handlePeerConnectionStateChange() async {
         guard let peerConnection = peerConnection else {
             return
         }
@@ -28,8 +28,31 @@ public class SignalingEventHandler {
             peerConnection.restartIce()
         }
     }
-    
-    func handleSignalingConnectionReconnect() {
+
+    private func handleSignalingConnectionReconnect() {
         peerConnection?.restartIce()
+    }
+}
+
+
+extension SignalingEventHandler: SignalingClientObserver {
+    public func signalingClient(_ client: any SignalingClient, didConnectionStateChange connectionState: SignalingConnectionState) async {
+        
+    }
+
+    public func signalingClient(_ client: any SignalingClient, didGetMessage message: JSONValue) async {
+
+    }
+
+    public func signalingClient(_ client: any SignalingClient, didChannelStateChange channelState: SignalingChannelState) async {
+        
+    }
+
+    public func signalingClient(_ client: any SignalingClient, didError error: any Error) async {
+        
+    }
+
+    public func signalingClientDidConnectionReconnect(_ client: any SignalingClient) async {
+        self.handleSignalingConnectionReconnect()
     }
 }
