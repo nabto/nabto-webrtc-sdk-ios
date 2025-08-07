@@ -15,7 +15,7 @@ public class SignalingEventHandler {
         self.client = client
     }
     
-    func handleConnectionStateChange() async {
+    func handlePeerConnectionStateChange() async {
         guard let peerConnection = peerConnection else {
             return
         }
@@ -29,7 +29,7 @@ public class SignalingEventHandler {
         }
     }
     
-    func handleConnectionReconnect() {
+    func handleSignalingConnectionReconnect() {
         peerConnection?.restartIce()
     }
 }
