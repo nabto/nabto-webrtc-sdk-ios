@@ -26,6 +26,7 @@ class ViewController: UIViewController {
     // Nabto Signaling
     var signalingClient: SignalingClient? = nil
     var messageTransport: MessageTransport? = nil
+    var signalingEventHandler: SignalingEventHandler? = nil
     let signer = JWTMessageSigner(sharedSecret: sharedSecret, keyId: "default")
 
     func initPeerConnectionFactory() {
@@ -93,7 +94,7 @@ class ViewController: UIViewController {
         container.layoutIfNeeded()
     }
 
-    private func setupPeerConnection(_ iceServers: [SignalingIceServer]) {
+    private func setupPeerConnection(_ iceServers: [SignalingIceServer]) async {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         let config = RTCConfiguration()
         config.iceServers = iceServers.map { iceServer in
@@ -106,6 +107,8 @@ class ViewController: UIViewController {
 
         peerConnection = factory.peerConnection(with: config, constraints: constraints, delegate: self)
         perfectNegotiation = PerfectNegotiation(peerConnection: peerConnection, messageTransport: messageTransport!)
+        signalingEventHandler = SignalingEventHandler(peerConnection: peerConnection, client: signalingClient!)
+        await signalingClient?.addObserver(signalingEventHandler!)
     }
 }
 
@@ -119,7 +122,7 @@ extension ViewController: MessageTransportObserver {
     }
 
     func messageTransport(_ transport: any MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async {
-        setupPeerConnection(iceServers)
+        await setupPeerConnection(iceServers)
     }
 }
 

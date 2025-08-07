@@ -10,19 +10,12 @@ public class SignalingEventHandler {
     weak var peerConnection: RTCPeerConnection?
     weak var client: SignalingClient?
     
-    init(peerConnection: RTCPeerConnection, client: SignalingClient) {
+    public init(peerConnection: RTCPeerConnection, client: SignalingClient) {
         self.peerConnection = peerConnection
         self.client = client
-
-        client.addObserver(self)
-    }
-
-    deinit {
-        client?.removeObserver(self)
     }
     
-    
-    func handlePeerConnectionStateChange() {
+    public func handlePeerConnectionStateChange() async {
         guard let peerConnection = peerConnection else {
             return
         }
