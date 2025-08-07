@@ -127,6 +127,6 @@ struct ClientConnectivityTestsFailOptions {
         try await client.start()
         try await service.expectConnectionStates([.connecting, .failed])
         let error = try await service.expectSomeError()
-        #expect(error is SignalingClientError)
+        #expect(error is HttpError)
     }
 }
