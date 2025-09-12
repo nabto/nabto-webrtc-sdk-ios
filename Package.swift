@@ -17,10 +17,6 @@ let package = Package(
         .library(
             name: "NabtoWebRTCUtilPerfectNegotiation",
             targets: ["NabtoWebRTCUtilPerfectNegotiation"]
-        ),
-        .library(
-            name: "WebRTC",
-            targets: ["WebRTC"]
         )
     ],
     dependencies: [
@@ -28,15 +24,11 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.7.0"),
         .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
+        .package(url: "https://github.com/stasel/WebRTC.git", from: "138.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
-        .binaryTarget(
-            name: "WebRTC",
-            url: "https://github.com/webrtc-sdk/Specs/releases/download/137.7151.03/WebRTC.xcframework.zip",
-            checksum: "150052870008ba9d077d0904c5ffe8689f0ce649dbecf4cc740cc1b913d9dcf5"
-        ),
         .target(
             name: "NabtoWebRTC",
             dependencies: [
@@ -53,7 +45,7 @@ let package = Package(
             dependencies: [
                 .byName(name: "NabtoWebRTC"),
                 .byName(name: "NabtoWebRTCUtil"),
-                .byName(name: "WebRTC")
+                .product(name: "WebRTC", package: "WebRTC"),
             ]),
         .testTarget(
             name: "NabtoWebRTCTests",
