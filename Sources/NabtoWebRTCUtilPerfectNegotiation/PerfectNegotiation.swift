@@ -21,7 +21,9 @@ public class PerfectNegotiation {
     private var polite = false
     private var makingOffer = false
     private var ignoreOffer = false
+    private var isSettingRemoteAnswerPending = false
 
+    private var eventTask: Task<Void, Never>?
     private var (eventStream, eventContinuation) = AsyncStream.makeStream(of: PerfectNegotiationEvent.self)
 
     /**
@@ -34,11 +36,16 @@ public class PerfectNegotiation {
         self.peerConnection = peerConnection
         self.messageTransport = messageTransport
 
-        Task {
+        eventTask = Task {
             for await event in eventStream {
                 await handleEvent(event)
             }
         }
+    }
+    
+    deinit {
+        eventContinuation.finish()
+        eventTask?.cancel()
     }
 
     public func onNegotiationNeeded() {
@@ -57,10 +64,10 @@ public class PerfectNegotiation {
         switch event {
         case .negotiationNeeded:
             self.makingOffer = true
+            defer { self.makingOffer = false }
             do {
                 try await peerConnection.setLocalDescription()
                 await self.sendDescription(self.peerConnection.localDescription)
-                self.makingOffer = false
             } catch {
                 // @TODO: Better logging
                 print(error)
@@ -85,11 +92,18 @@ public class PerfectNegotiation {
 
     private func addIceCandidate(_ cand: SignalingCandidate.Candidate) async throws {
         let remoteCandidate = RTCIceCandidate(sdp: cand.candidate, sdpMLineIndex: 0, sdpMid: cand.sdpMid)
-        try await peerConnection.add(remoteCandidate)
+        do {
+            try await peerConnection.add(remoteCandidate)
+        } catch {
+            if !ignoreOffer {
+                throw error
+            }
+        }
     }
 
     private func setRemoteDescription(_ desc: SignalingDescription.Description) async throws {
-        let collision = desc.type == "offer" && (makingOffer || peerConnection.signalingState != .stable)
+        let readyForOffer = !makingOffer && (peerConnection.signalingState == .stable || isSettingRemoteAnswerPending)
+        let collision = desc.type == "offer" && !readyForOffer
 
         ignoreOffer = !polite && collision
         if ignoreOffer {
@@ -99,8 +113,12 @@ public class PerfectNegotiation {
         let type = RTCSessionDescription.type(for: desc.type)
         let desc = RTCSessionDescription(type: type, sdp: desc.sdp)
         try await self.peerConnection.setRemoteDescription(desc)
-        try await self.peerConnection.setLocalDescription()
-        await self.sendDescription(self.peerConnection.localDescription)
+        
+        // Send answer only if we are receiving an offer
+        if type == .offer {
+            try await self.peerConnection.setLocalDescription()
+            await self.sendDescription(self.peerConnection.localDescription)
+        }
     }
 
     private func sendDescription(_ desc: RTCSessionDescription?) async {
