@@ -59,6 +59,7 @@ public class PerfectNegotiation {
             self.makingOffer = true
             do {
                 try await peerConnection.setLocalDescription()
+                await self.sendDescription(self.peerConnection.localDescription)
                 self.makingOffer = false
             } catch {
                 // @TODO: Better logging
