@@ -111,8 +111,18 @@ public class PerfectNegotiation {
         }
 
         let type = RTCSessionDescription.type(for: desc.type)
-        let desc = RTCSessionDescription(type: type, sdp: desc.sdp)
-        try await self.peerConnection.setRemoteDescription(desc)
+
+        // FIX: Munge offer SDP for iOS WebRTC compatibility
+        var sdpToUse = desc.sdp
+        if type == .offer {
+            // iOS WebRTC decoder factory is case-sensitive but SDP spec says names are case-insensitive
+            sdpToUse = sdpToUse.replacingOccurrences(of: " h264/", with: " H264/")
+            // iOS doesn't support plain Baseline (42001f), only Constrained Baseline (42e01f)
+            sdpToUse = sdpToUse.replacingOccurrences(of: "profile-level-id=42001f", with: "profile-level-id=42e01f")
+        }
+
+        let rtcDesc = RTCSessionDescription(type: type, sdp: sdpToUse)
+        try await self.peerConnection.setRemoteDescription(rtcDesc)
         
         // Send answer only if we are receiving an offer
         if type == .offer {
