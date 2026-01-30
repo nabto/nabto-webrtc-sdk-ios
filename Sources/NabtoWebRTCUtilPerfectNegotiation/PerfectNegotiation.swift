@@ -44,8 +44,18 @@ public class PerfectNegotiation {
     }
     
     deinit {
+        // close() should have been called before deinit
+        // This is a fallback in case it wasn't
         eventContinuation.finish()
         eventTask?.cancel()
+    }
+
+    /// Closes the perfect negotiation, releasing resources and breaking retain cycles.
+    /// Must be called before releasing the PerfectNegotiation instance.
+    public func close() {
+        eventContinuation.finish()
+        eventTask?.cancel()
+        eventTask = nil
     }
 
     public func onNegotiationNeeded() {

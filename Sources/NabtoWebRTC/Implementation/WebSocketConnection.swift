@@ -96,6 +96,7 @@ fileprivate class SocketStream: AsyncSequence {
 class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDelegate {
     weak var observer: WebSocketObserver?
     private var socket: URLSessionWebSocketTask? = nil
+    private var urlSession: URLSession? = nil
     private var isConnected = false
     private var pongCounter = 0
 
@@ -103,6 +104,13 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     private var socketStream: SocketStream?
     private var eventStream: EventStream?
     private var eventContinuation: EventStream.Continuation?
+    private var eventTask: Task<Void, Never>?
+    private var messageTask: Task<Void, Never>?
+    private var checkAliveTask: Task<Void, Never>?
+
+    deinit {
+        Log.webSocket.info("WebSocketConnection deinit - instance deallocated")
+    }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol prtcl: String?) {
         isConnected = true
@@ -124,15 +132,30 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
 
     func connect(_ endpoint: String, observer: WebSocketObserver) async {
         self.observer = observer
-        self.eventContinuation?.finish()
+
+        // Clean up any existing connection before reconnecting
+        eventTask?.cancel()
+        eventTask = nil
+        messageTask?.cancel()
+        messageTask = nil
+        checkAliveTask?.cancel()
+        checkAliveTask = nil
+        eventContinuation?.finish()
+        eventContinuation = nil
+        socket?.cancel(with: .goingAway, reason: nil)
+        socket = nil
+        urlSession?.invalidateAndCancel()
+        urlSession = nil
+        socketStream = nil
+        eventStream = nil
 
         let (stream, cont) = AsyncStream.makeStream(of: SocketEvent.self)
         self.eventStream = stream
         self.eventContinuation = cont
 
-        let urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
-        socket = urlSession.webSocketTask(with: URL(string: endpoint)!)
-        Task {
+        self.urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
+        socket = self.urlSession!.webSocketTask(with: URL(string: endpoint)!)
+        eventTask = Task {
             guard let eventStream = eventStream else {
                 return
             }
@@ -152,7 +175,7 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
         }
 
         self.socketStream = SocketStream(task: socket!)
-        Task {
+        messageTask = Task {
             guard let stream = self.socketStream else {
                 return
             }
@@ -177,7 +200,33 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     }
 
     func close() {
+        Log.webSocket.info("WebSocketConnection.close() starting")
+        isConnected = false
+
+        // Cancel tasks first to stop processing
+        eventTask?.cancel()
+        eventTask = nil
+        messageTask?.cancel()
+        messageTask = nil
+        checkAliveTask?.cancel()
+        checkAliveTask = nil
+
+        // Finish the event stream
+        eventContinuation?.finish()
+        eventContinuation = nil
+
+        // Cancel the socket
         socket?.cancel(with: .goingAway, reason: nil)
+        socket = nil
+
+        // Invalidate the URLSession - this releases delegate reference
+        urlSession?.invalidateAndCancel()
+        urlSession = nil
+
+        // Clear stream references
+        socketStream = nil
+        eventStream = nil
+        Log.webSocket.info("WebSocketConnection.close() completed")
     }
 
     func sendMessage(_ channelId: String, _ message: ReliabilityData) {
@@ -211,7 +260,8 @@ class WebSocketConnection: NSObject, URLSessionDelegate, URLSessionWebSocketDele
     func checkAlive(timeout: Double) async {
         let currentPongCounter = self.pongCounter
         sendPing()
-        Task {
+        checkAliveTask?.cancel()
+        checkAliveTask = Task {
             let timeoutNanos = UInt64(timeout * 1000000)
             do {
                 try await Task.sleep(nanoseconds: timeoutNanos)
