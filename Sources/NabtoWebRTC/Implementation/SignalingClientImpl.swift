@@ -27,6 +27,7 @@ actor SignalingClientImpl: SignalingClient, ReliabilityHandler {
     private var isReconnecting = false
     private var reconnectCounter = 0
     private var openedWebSockets = 0
+    private var reconnectTask: Task<Void, Never>?
 
     init(endpointUrl: String, productId: String, deviceId: String, requireOnline: Bool, accessToken: String?) {
         self.endpointUrl = endpointUrl
@@ -84,6 +85,8 @@ actor SignalingClientImpl: SignalingClient, ReliabilityHandler {
             errorCode: SignalingErrorCode.channelClosed,
             errorMessage: "Signaling client channel was closed"
         ))
+        reconnectTask?.cancel()
+        reconnectTask = nil
         webSocket.close()
         await setConnectionState(.closed)
         await setChannelState(.disconnected)
@@ -171,7 +174,8 @@ actor SignalingClientImpl: SignalingClient, ReliabilityHandler {
         let reconnectWait =  (1 << reconnectCounter)
         reconnectCounter += 1
 
-        Task {
+        reconnectTask?.cancel()
+        reconnectTask = Task {
             do {
                 try await Task.sleep(nanoseconds: UInt64(reconnectWait * 1000000000))
                 await self.reconnect()
@@ -251,6 +255,8 @@ actor SignalingClientImpl: SignalingClient, ReliabilityHandler {
 extension SignalingClientImpl: WebSocketObserver {
     func socketDidOpen(_ ws: WebSocketConnection) async {
         reconnectCounter = 0
+        reconnectTask?.cancel()
+        reconnectTask = nil
         openedWebSockets += 1
         await handleWebSocketConnect(wasReconnected: openedWebSockets > 1)
         await setConnectionState(.connected)
