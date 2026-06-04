@@ -12,6 +12,46 @@ fileprivate enum PerfectNegotiationError: Error {
     case missingLocalDescription
 }
 
+/// A continuation wrapper that can be resumed at most once, from either the
+/// async operation's completion or task cancellation, whichever happens first.
+/// Thread-safe via an internal lock; handles cancellation arriving before the
+/// continuation is attached.
+fileprivate final class CancellableContinuation<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T, Error>?
+    private var pendingResult: Result<T, Error>?
+    private var finished = false
+
+    func attach(_ continuation: CheckedContinuation<T, Error>) {
+        lock.lock()
+        if let pendingResult {
+            finished = true
+            lock.unlock()
+            continuation.resume(with: pendingResult)
+        } else {
+            self.continuation = continuation
+            lock.unlock()
+        }
+    }
+
+    func resume(with result: Result<T, Error>) {
+        lock.lock()
+        if finished {
+            lock.unlock()
+            return
+        }
+        if let continuation {
+            finished = true
+            self.continuation = nil
+            lock.unlock()
+            continuation.resume(with: result)
+        } else {
+            pendingResult = result
+            lock.unlock()
+        }
+    }
+}
+
 /**
  * This class implements the <a
  * href="https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation">Perfect
@@ -157,75 +197,99 @@ public class PerfectNegotiation {
     // The fix runs each peer-connection operation on a dedicated serial queue
     // and suspends the caller on a continuation. Any blocking then lands on our
     // own thread, never a cooperative-pool thread, so the pool stays free.
+    //
+    // The bridge is also cancellation-aware: If the negotiation task is
+    // cancelled while suspended here (for example close() during an in-flight
+    // operation), the caller is resumed with CancellationError so the event
+    // loop can unwind and the PerfectNegotiation instance can deallocate,
+    // rather than waiting for the WebRTC callback (which may be slow or, after
+    // the peer connection is closed, never fire). The underlying WebRTC
+    // operation cannot be cancelled, so its later callback is ignored. The
+    // continuation is resumed exactly once.
 
     private func applyLocalDescription() async throws {
         // RTCPeerConnection only exposes the implicit (offer-or-answer)
         // setLocalDescription as a blocking async call, so create the local
         // description explicitly via the suspending completion-handler variants
-        // and then set it. This mirrors the implicit behavior: answer when we
+        // and then set it. This mirrors the implicit behavior: Answer when we
         // hold a remote offer, otherwise offer.
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         let sdp = try await createLocalSessionDescription(constraints: constraints)
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            peerConnectionQueue.async {
-                self.peerConnection.setLocalDescription(sdp, completionHandler: { error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume()
-                    }
-                })
-            }
+        try await runOnPeerConnectionQueue { [peerConnection] (completion: @escaping (Result<Void, Error>) -> Void) in
+            peerConnection.setLocalDescription(sdp, completionHandler: { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            })
         }
     }
 
     private func createLocalSessionDescription(constraints: RTCMediaConstraints) async throws -> RTCSessionDescription {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RTCSessionDescription, Error>) in
-            peerConnectionQueue.async {
-                let completion: (RTCSessionDescription?, Error?) -> Void = { sdp, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else if let sdp {
-                        continuation.resume(returning: sdp)
-                    } else {
-                        continuation.resume(throwing: PerfectNegotiationError.missingLocalDescription)
-                    }
+        try await runOnPeerConnectionQueue { [peerConnection] (completion: @escaping (Result<RTCSessionDescription, Error>) -> Void) in
+            let handler: (RTCSessionDescription?, Error?) -> Void = { sdp, error in
+                if let error {
+                    completion(.failure(error))
+                } else if let sdp {
+                    completion(.success(sdp))
+                } else {
+                    completion(.failure(PerfectNegotiationError.missingLocalDescription))
                 }
-                switch self.peerConnection.signalingState {
-                case .haveRemoteOffer, .haveLocalPrAnswer:
-                    self.peerConnection.answer(for: constraints, completionHandler: completion)
-                default:
-                    self.peerConnection.offer(for: constraints, completionHandler: completion)
-                }
+            }
+            switch peerConnection.signalingState {
+            case .haveRemoteOffer, .haveLocalPrAnswer:
+                peerConnection.answer(for: constraints, completionHandler: handler)
+            default:
+                peerConnection.offer(for: constraints, completionHandler: handler)
             }
         }
     }
 
     private func applyRemoteDescription(_ description: RTCSessionDescription) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            peerConnectionQueue.async {
-                self.peerConnection.setRemoteDescription(description, completionHandler: { error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume()
-                    }
-                })
-            }
+        try await runOnPeerConnectionQueue { [peerConnection] (completion: @escaping (Result<Void, Error>) -> Void) in
+            peerConnection.setRemoteDescription(description, completionHandler: { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            })
         }
     }
 
     private func addRemoteCandidate(_ candidate: RTCIceCandidate) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            peerConnectionQueue.async {
-                self.peerConnection.add(candidate, completionHandler: { error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume()
-                    }
-                })
+        try await runOnPeerConnectionQueue { [peerConnection] (completion: @escaping (Result<Void, Error>) -> Void) in
+            peerConnection.add(candidate, completionHandler: { error in
+                if let error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            })
+        }
+    }
+
+    /// Runs `body` on the dedicated peer-connection queue and suspends the
+    /// caller until `body` invokes its completion. Cancellation-aware: If the
+    /// task is cancelled while suspended, the caller is resumed with
+    /// CancellationError and the WebRTC callback (which cannot be cancelled) is
+    /// ignored when it later fires. The caller is resumed exactly once.
+    /// `body` captures the peer connection rather than self, so a cancelled
+    /// negotiation does not keep the PerfectNegotiation instance alive.
+    private func runOnPeerConnectionQueue<T>(
+        _ body: @escaping (@escaping (Result<T, Error>) -> Void) -> Void
+    ) async throws -> T {
+        let state = CancellableContinuation<T>()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, Error>) in
+                state.attach(continuation)
+                peerConnectionQueue.async {
+                    body { result in state.resume(with: result) }
+                }
             }
+        } onCancel: {
+            state.resume(with: .failure(CancellationError()))
         }
     }
 
