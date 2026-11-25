@@ -97,13 +97,19 @@ public struct SignalingCandidate: Codable, SignalingMessage {
         }
 
         let sdpMid = json.asObject?["candidate"]?.asObject?["sdpMid"]?.asString
-        let sdpMLineIndex = json.asObject?["candidate"]?.asObject?["sdpMLineIndex"]?.asNumber
+        let jsonSdpMLineIndex = json.asObject?["candidate"]?.asObject?["sdpMLineIndex"]?.asNumber
         let usernameFragment = json.asObject?["candidate"]?.asObject?["usernameFragment"]?.asString
+
+        // An index that is not an integer in the range of Int makes the
+        // candidate invalid.
+        guard let sdpMLineIndex = Int(exactly: jsonSdpMLineIndex ?? 0) else {
+            return nil
+        }
 
         return SignalingCandidate(
             candidate: candidate,
             sdpMid: sdpMid,
-            sdpMLineIndex: Int(sdpMLineIndex ?? 0),
+            sdpMLineIndex: sdpMLineIndex,
             usernameFragment: usernameFragment
         )
     }

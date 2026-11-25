@@ -42,7 +42,12 @@ private actor FakeSignalingClient: SignalingClient {
 
 /// A signaling message as the device sends it with the "none" signer.
 private func signed(_ message: SignalingMessage) -> JSONValue {
-    .object(["type": .string("NONE"), "message": message.toJson()])
+    signed(message.toJson())
+}
+
+/// A raw signaling message as the device sends it with the "none" signer.
+private func signed(_ message: JSONValue) -> JSONValue {
+    .object(["type": .string("NONE"), "message": message])
 }
 
 /// A one-shot latch an observer callback can be held on.
@@ -68,6 +73,7 @@ private actor RecordingObserver: MessageTransportObserver {
     /// "+name" when a callback is entered, "-name" when it returns, and notes.
     private(set) var log: [String] = []
     private(set) var iceServers: [[SignalingIceServer]] = []
+    private(set) var errors: [Error] = []
     private let setupGate: Gate?
     private var onMessage: (@Sendable (MessageTransport, String) async -> Void)?
 
@@ -92,6 +98,7 @@ private actor RecordingObserver: MessageTransportObserver {
 
     func messageTransport(_ transport: MessageTransport, didError error: Error) async {
         enter("error")
+        errors.append(error)
         log.append("-error")
     }
 
@@ -160,6 +167,22 @@ private let testIceServers = [
 
 private func setupResponse() -> SignalingSetupResponse {
     SignalingSetupResponse(iceServers: testIceServers)
+}
+
+/// The error code of a SignalingError, nil for any other error.
+private func signalingErrorCode(_ error: Error?) -> String? {
+    (error as? SignalingError)?.errorCode.stringValue
+}
+
+/// A candidate whose sdpMLineIndex is far outside the range of Int.
+private func candidateWithHugeIndex() -> JSONValue {
+    .object([
+        "type": .string("CANDIDATE"),
+        "candidate": .object([
+            "candidate": .string("candidate:1 1 udp 1 192.0.2.1 9 typ host"),
+            "sdpMLineIndex": .number(1e300)
+        ])
+    ])
 }
 
 private func offer(_ sdp: String) -> SignalingDescription {
@@ -420,5 +443,105 @@ struct ClientMessageTransportTests {
 
         #expect(await observer.events.isEmpty)
         #expect(await transport.pendingCount() == 0)
+    }
+
+    @Test
+    func setupResponseWithoutIceServersFinishesSetupWithNone() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+
+        // A device whose own ICE server request failed omits the member.
+        await client.deliver(signed(.object(["type": .string("SETUP_RESPONSE")])))
+        await client.deliverSignaling(offer("one"))
+
+        #expect(await observer.events == ["setup", "message:one"])
+        #expect(await observer.iceServers.map(\.count) == [0])
+    }
+
+    @Test
+    func setupResponseWithNullIceServersFinishesSetupWithNone() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        await client.deliver(signed(.object(["type": .string("SETUP_RESPONSE"), "iceServers": .null])))
+        await client.deliverSignaling(offer("one"))
+
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+        await transport.waitIdle()
+
+        #expect(await observer.events == ["setup", "message:one"])
+        #expect(await observer.iceServers.map(\.count) == [0])
+    }
+
+    @Test
+    func malformedSetupResponseIsAnError() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        // Held before any observer, like every other event.
+        await client.deliver(signed(.object([
+            "type": .string("SETUP_RESPONSE"),
+            "iceServers": .string("stun:stun.example.com")
+        ])))
+
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+        await transport.waitIdle()
+
+        #expect(await observer.events == ["error"])
+        #expect(signalingErrorCode(await observer.errors.first) == "DECODE_ERROR")
+
+        // The transport is still waiting for a setup response it can use.
+        await client.deliverSignaling(setupResponse())
+        await client.deliverSignaling(offer("one"))
+        #expect(await observer.events == ["error", "setup", "message:one"])
+    }
+
+    @Test
+    func signalingMessageBeforeSetupResponseIsAnError() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+
+        await client.deliverSignaling(offer("early"))
+        await client.deliverSignaling(SignalingCandidate(candidate: "candidate:1 1 udp 1 192.0.2.1 9 typ host"))
+        await client.deliverSignaling(setupResponse())
+        await client.deliverSignaling(offer("one"))
+
+        // Neither early message is held or delivered as a message.
+        #expect(await observer.events == ["error", "error", "setup", "message:one"])
+        let codes = await observer.errors.map { signalingErrorCode($0) }
+        #expect(codes == ["DECODE_ERROR", "DECODE_ERROR"])
+    }
+
+    @Test
+    func undecodableCandidateBeforeSetupResponseIsAnError() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+
+        await client.deliver(signed(candidateWithHugeIndex()))
+        await client.deliverSignaling(setupResponse())
+        await client.deliverSignaling(offer("one"))
+
+        #expect(await observer.events == ["error", "setup", "message:one"])
+        #expect(signalingErrorCode(await observer.errors.first) == "DECODE_ERROR")
+    }
+
+    @Test
+    func undecodableCandidateAfterSetupIsDropped() async throws {
+        let client = FakeSignalingClient()
+        let transport = try await makeTransport(client)
+        let observer = RecordingObserver()
+        await transport.addObserver(observer)
+
+        await client.deliverSignaling(setupResponse())
+        await client.deliver(signed(candidateWithHugeIndex()))
+        await client.deliverSignaling(offer("one"))
+
+        #expect(await observer.events == ["setup", "message:one"])
     }
 }

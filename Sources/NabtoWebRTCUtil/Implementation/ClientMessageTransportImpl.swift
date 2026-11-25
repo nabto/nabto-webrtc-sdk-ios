@@ -99,14 +99,20 @@ actor ClientMessageTransportImpl: MessageTransport {
         }
         do {
             let verified = try messageSigner.verifyMessage(message)
-            let decoded = SignalingMessageUnion.fromJson(verified)
             switch state {
                 case .setup:
-                    if let setupResponse = decoded.setupResponse {
-                        self.state = .signaling
-                        pending.append(.setupDone(setupResponse.iceServers))
+                    // Until the setup response has arrived, any other message
+                    // is an error, delivered like every other error. Only a
+                    // message of the setup response type is decoded. The
+                    // transport stays in setup and waits for a usable one.
+                    guard verified.asObject?["type"]?.asString == SignalingMessageType.setupResponse.rawValue,
+                          let setupResponse = SignalingSetupResponse.fromJson(verified) else {
+                        throw Self.setupError(for: verified)
                     }
+                    self.state = .signaling
+                    pending.append(.setupDone(setupResponse.iceServers))
                 case .signaling:
+                    let decoded = SignalingMessageUnion.fromJson(verified)
                     if let candidate = decoded.candidate {
                         pending.append(.message(WebrtcSignalingMessage(candidate: candidate)))
                     } else if let description = decoded.description {
@@ -117,6 +123,17 @@ actor ClientMessageTransportImpl: MessageTransport {
             pending.append(.error(error))
         }
         await startDrain()?.value
+    }
+
+    /// The error for a verified message that arrives in the setup state and
+    /// is not a setup response the transport can use.
+    private static func setupError(for message: JSONValue) -> SignalingError {
+        let type = message.asObject?["type"]?.asString
+        if type == SignalingMessageType.setupResponse.rawValue {
+            return SignalingError(errorCode: .decodeError, errorMessage: "The setup response is malformed: Its iceServers member is not a list of ICE servers.")
+        }
+        let received = type.map { "a message of type \($0)" } ?? "a message without a type"
+        return SignalingError(errorCode: .decodeError, errorMessage: "Expected a \(SignalingMessageType.setupResponse.rawValue) message but got \(received).")
     }
 
     /**

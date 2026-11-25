@@ -26,12 +26,34 @@ public struct SignalingSetupRequest: Codable, SignalingMessage {
     }
 }
 
+/**
+ * The device's response to the setup request.
+ *
+ * The iceServers member of a message of type SETUP_RESPONSE may be absent or
+ * null, for example when the device could not obtain ICE servers. Such a
+ * response is valid and decodes with an empty list. A member that is present
+ * but not an array makes the response invalid.
+ */
 public struct SignalingSetupResponse: Codable, SignalingMessage {
     public var type = SignalingMessageType.setupResponse
     public var iceServers: [SignalingIceServer]
 
+    private enum CodingKeys: String, CodingKey {
+        case type, iceServers
+    }
+
     public init(iceServers: [SignalingIceServer]) {
         self.iceServers = iceServers
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.type = try container.decode(SignalingMessageType.self, forKey: .type)
+        if type == .setupResponse {
+            self.iceServers = try container.decodeIfPresent([SignalingIceServer].self, forKey: .iceServers) ?? []
+        } else {
+            self.iceServers = try container.decode([SignalingIceServer].self, forKey: .iceServers)
+        }
     }
 
     public func toJson() -> JSONValue {
@@ -43,8 +65,20 @@ public struct SignalingSetupResponse: Codable, SignalingMessage {
     }
 
     public static func fromJson(_ json: JSONValue) -> SignalingSetupResponse? {
-        guard let jsonIceServers = json.asObject?["iceServers"]?.asArray else {
+        guard let object = json.asObject else {
             return nil
+        }
+        let jsonIceServers: [JSONValue]
+        switch object["iceServers"] {
+            case .array(let array):
+                jsonIceServers = array
+            case nil, .null:
+                guard object["type"]?.asString == SignalingMessageType.setupResponse.rawValue else {
+                    return nil
+                }
+                jsonIceServers = []
+            default:
+                return nil
         }
 
         var iceServers: [SignalingIceServer] = []
