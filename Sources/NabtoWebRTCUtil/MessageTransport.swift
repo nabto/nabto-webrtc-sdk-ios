@@ -16,6 +16,12 @@ public protocol MessageTransportObserver: AnyObject {
     /**
      * Callback invoked if an error occurs in the MessageTransport.
      *
+     * Before setup has finished, a message from the device that is not a
+     * usable setup response (a malformed setup response, or a description or
+     * candidate sent ahead of it) is reported here as a SignalingError with
+     * the code decodeError. The message is dropped and the transport keeps
+     * waiting for the setup response.
+     *
      * @param transport The MessageTransport that emitted the error
      * @param error The error that occurred.
      */
@@ -24,8 +30,12 @@ public protocol MessageTransportObserver: AnyObject {
     /**
      * Callback invoked when the setup phase of the MessageTransport is concluded.
      *
+     * The list of ICE servers may be empty, for example when the device could
+     * not obtain ICE servers. This is a normal outcome: Create the Peer
+     * Connection with the empty list.
+     *
      * @param transport The MessageTransport that finished its setup phase.
-     * @param iceServers A list of ICE servers to use in Peer Connection.
+     * @param iceServers A list of ICE servers to use in Peer Connection, possibly empty.
      */
     func messageTransport(_ transport: MessageTransport, didFinishSetup iceServers: [SignalingIceServer]) async
 }
@@ -40,7 +50,7 @@ public protocol MessageTransportObserver: AnyObject {
  *
  * The didFinishSetup event on MessageTransportObserver is fired when the channel is setup. The
  * PeerConnection should be created in this callback and it should be created
- * with the RTC ICE Servers provided in the callback.
+ * with the RTC ICE Servers provided in the callback, which may be none.
  */
 public protocol MessageTransport: Actor {
     /**
