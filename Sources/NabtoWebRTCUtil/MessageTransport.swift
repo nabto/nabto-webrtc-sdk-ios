@@ -53,6 +53,15 @@ public protocol MessageTransport: Actor {
     /**
      * Add an observer to receive callbacks when events occurs.
      *
+     * An observer may be added at any time after the transport is created.
+     * Events that arrive while no observer is registered (the setup event,
+     * signaling messages and errors) are held and delivered, in the order
+     * they arrived, once an observer is added. An observer added after setup
+     * has finished receives didFinishSetup with the same ICE servers and then
+     * the events from then on. Adding an observer that is already registered
+     * has no effect. An observer that is removed and added again is a new
+     * registration and receives didFinishSetup again.
+     *
      * @param observer The observer to add.
      */
     func addObserver(_ observer: MessageTransportObserver)
@@ -85,7 +94,15 @@ public enum ClientMessageTransportOptions {
 }
 
 /**
- * Create a client MessageTransport. The type of signing to be used depends on the options parameter..
+ * Create a client MessageTransport. The type of signing to be used depends on the options parameter.
+ *
+ * The transport sends its setup request before this function returns, so the
+ * setup response and the first messages may arrive before the application
+ * calls addObserver on the returned transport. They are not lost: They are
+ * held and delivered once an observer is added (see MessageTransport.addObserver).
+ * The transport delivers events one at a time, so the signaling client must not
+ * deliver an incoming message from inside its sendMessage: An observer callback
+ * may be awaiting that send.
  *
  * @param client The signaling client for sending/receiving messages.
  * @param options A ClientMessageTransportOptions object that specifies what type of message signing to use.
